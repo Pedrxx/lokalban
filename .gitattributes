@@ -1,0 +1,6 @@
+# Normaliza finais de linha (evita diffs CRLF/LF e falha do Prettier no CI do Windows)
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.icns binary

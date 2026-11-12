@@ -1,0 +1,29 @@
+name: ✨ Sugerir funcionalidade
+description: Uma ideia para deixar o LokalBan melhor
+labels: ["melhoria", "triagem"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema isso resolve?
+      description: Conte o contexto — o "porquê" importa mais que o "como".
+      placeholder: "Quando tenho muitas tarefas, não sei o que é urgente..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Como você imagina a solução?
+      description: Pode incluir rascunhos, prints de outros apps, referências do macOS.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribuição
+      options:
+        - label: Quero implementar isso (ou ajudar)

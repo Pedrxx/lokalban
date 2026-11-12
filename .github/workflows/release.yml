@@ -1,0 +1,45 @@
+# Gera o instalador e cria um rascunho de Release quando uma tag v* é enviada:
+#   git tag v0.2.0 && git push origin v0.2.0
+# Depois é só revisar o rascunho em Releases e publicar.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build do instalador Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: LokalBan ${{ github.ref_name }}
+          releaseBody: |
+            Baixe o arquivo `LokalBan_*_x64-setup.exe` abaixo e execute.
+            O instalador ainda não é assinado: no aviso do SmartScreen clique em "Mais informações → Executar assim mesmo".
+          releaseDraft: true
+          prerelease: false

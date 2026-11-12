@@ -1,0 +1,49 @@
+name: 🐞 Relatar bug
+description: Algo não funciona como deveria
+labels: ["bug", "triagem"]
+body:
+  - type: markdown
+    attributes:
+      value: Obrigado por reportar! Quanto mais detalhes, mais rápido conseguimos corrigir.
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema. Prints ou GIFs ajudam muito.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abra o LokalBan
+        2. Arraste um card para "Concluído"
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que você esperava?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versão do LokalBan
+      placeholder: "0.1.0 (instalado) ou commit abc1234 (dev)"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Versão do Windows
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Informações adicionais
+      description: Logs, trecho do board.json (sem dados pessoais), etc.

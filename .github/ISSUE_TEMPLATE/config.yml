@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Dúvidas, ideias e troca de experiência
+    url: https://github.com/Pedrxx/lokalban/discussions
+    about: Para perguntas, debates de arquitetura/UX e "como você faria isso?", use as Discussions.
