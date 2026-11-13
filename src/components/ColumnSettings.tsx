@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { COLUMN_COLORS, MAX_COLUMNS, type ColumnColor, type ColumnDef, type ColumnId } from "../types";
 import { cn } from "../lib/cn";
 import { formatDayShort, type DayKey } from "../lib/date";
 import { ColorPicker } from "./ColorPicker";
 import { IconButton } from "./IconButton";
-import { CheckIcon, PinIcon, PlusIcon, TrashIcon } from "./icons";
+import { CheckIcon, GripIcon, PinIcon, PlusIcon, TrashIcon } from "./icons";
 
 type Props = {
   open: boolean;
@@ -20,6 +21,8 @@ type Props = {
   onRecolor: (id: ColumnId, color: ColumnColor) => void;
   onToggleDone: (id: ColumnId, done: boolean) => void;
   onTogglePin: (id: ColumnId, pinned: boolean) => void;
+  /** reordena (indices da lista do dia) */
+  onMove: (from: number, to: number) => void;
   onDelete: (id: ColumnId) => void;
 };
 
@@ -36,6 +39,7 @@ export function ColumnSettings({
   onRecolor,
   onToggleDone,
   onTogglePin,
+  onMove,
   onDelete,
 }: Props) {
   const [focusId, setFocusId] = useState<ColumnId | null>(null);
@@ -50,7 +54,8 @@ export function ColumnSettings({
       return;
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.target instanceof HTMLInputElement) return;
+      // defaultPrevented: Esc que cancelou um arrasto da lista nao fecha o painel
+      if (e.key !== "Escape" || e.defaultPrevented || e.target instanceof HTMLInputElement) return;
       // Esc fecha primeiro o seletor de cor, depois o painel
       if (coloring) setColoring(null);
       else onClose();
@@ -93,120 +98,161 @@ export function ColumnSettings({
 
         <h3 className="px-1 pb-2 text-[12px] font-semibold text-black/50 dark:text-white/50">Colunas</h3>
 
-        <ul className="flex flex-col gap-1">
-          {columns.map((col) => {
-            const count = taskCounts[col.id] ?? 0;
-            const confirming = confirmDelete === col.id;
-            const pinned = !col.until;
-            const isLocked = locked.has(col.id);
-            return (
-              <li key={col.id} className="flex items-center gap-1.5 rounded-lg px-1 py-0.5">
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    title="Cor da coluna"
-                    aria-label="Cor da coluna"
-                    aria-expanded={coloring === col.id}
-                    onClick={() => setColoring((c) => (c === col.id ? null : col.id))}
-                    className={cn(
-                      "block size-3.5 rounded-full transition-transform duration-150 ease-spring hover:scale-125 active:scale-95",
-                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500",
-                      COLUMN_COLORS[col.color],
-                    )}
-                  />
-                  {coloring === col.id && (
-                    <ColorPicker
-                      value={col.color}
-                      onSelect={(color) => {
-                        onRecolor(col.id, color);
-                        setColoring(null);
-                      }}
-                      className="absolute top-full -left-2.5 z-20 mt-2 origin-top-left"
-                    />
-                  )}
-                </div>
+        <DragDropContext
+          onDragStart={() => setColoring(null)}
+          onDragEnd={({ source, destination }) => destination && onMove(source.index, destination.index)}
+        >
+          <Droppable droppableId="column-list">
+            {(listProvided) => (
+              // espaco entre linhas por padding (a lib nao considera o gap ao deslocar)
+              <ul ref={listProvided.innerRef} {...listProvided.droppableProps}>
+                {columns.map((col, index) => {
+                  const count = taskCounts[col.id] ?? 0;
+                  const confirming = confirmDelete === col.id;
+                  const pinned = !col.until;
+                  const isLocked = locked.has(col.id);
+                  return (
+                    <Draggable key={col.id} draggableId={`column-row:${col.id}`} index={index}>
+                      {(provided, snapshot) => (
+                        <li ref={provided.innerRef} {...provided.draggableProps} className="pb-1">
+                          <div
+                            className={cn(
+                              "group/row flex items-center gap-1.5 rounded-lg py-0.5 pr-1",
+                              "transition-[background-color,box-shadow] duration-200 ease-mac",
+                              snapshot.isDragging && "bg-white shadow-[0_8px_24px_rgb(0_0_0/0.18)] dark:bg-[#3a3a3e]",
+                            )}
+                          >
+                            <div
+                              {...provided.dragHandleProps}
+                              aria-label={`Arrastar ${col.title} para reordenar`}
+                              title="Arraste para reordenar"
+                              className={cn(
+                                "grid h-6 w-3 shrink-0 place-items-center rounded text-black/35 dark:text-white/40",
+                                "opacity-0 transition-opacity duration-150 group-hover/row:opacity-100",
+                                "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sky-500/60",
+                                snapshot.isDragging && "opacity-100",
+                              )}
+                            >
+                              <GripIcon width={10} height={12} />
+                            </div>
 
-                <input
-                  key={col.title}
-                  defaultValue={col.title}
-                  maxLength={32}
-                  aria-label="Nome da coluna"
-                  ref={(el) => {
-                    if (el && focusId === col.id) {
-                      el.focus();
-                      el.select();
-                      setFocusId(null);
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const v = e.currentTarget.value.trim();
-                    if (v && v !== col.title) onRename(col.id, v);
-                    else e.currentTarget.value = col.title;
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                    if (e.key === "Escape") {
-                      e.currentTarget.value = col.title;
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  className={cn(
-                    "min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-[13px] outline-none select-text",
-                    "transition-colors duration-150 hover:bg-black/[0.04] focus:bg-black/[0.06] dark:hover:bg-white/[0.06] dark:focus:bg-white/10",
-                    "focus:ring-2 focus:ring-sky-500/50",
-                  )}
-                />
+                            <div className="relative shrink-0">
+                              <button
+                                type="button"
+                                title="Cor da coluna"
+                                aria-label="Cor da coluna"
+                                aria-expanded={coloring === col.id}
+                                onClick={() => setColoring((c) => (c === col.id ? null : col.id))}
+                                className={cn(
+                                  "block size-3.5 rounded-full transition-transform duration-150 ease-spring hover:scale-125 active:scale-95",
+                                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500",
+                                  COLUMN_COLORS[col.color],
+                                )}
+                              />
+                              {coloring === col.id && (
+                                <ColorPicker
+                                  value={col.color}
+                                  onSelect={(color) => {
+                                    onRecolor(col.id, color);
+                                    setColoring(null);
+                                  }}
+                                  className="absolute top-full -left-2.5 z-20 mt-2 origin-top-left"
+                                />
+                              )}
+                            </div>
 
-                {col.until && (
-                  <span className="shrink-0 text-[11px] text-black/40 dark:text-white/40">
-                    {col.from === day && col.until === day ? "só neste dia" : `até ${formatDayShort(col.until)}`}
-                  </span>
-                )}
+                            <input
+                              key={col.title}
+                              defaultValue={col.title}
+                              maxLength={32}
+                              aria-label="Nome da coluna"
+                              ref={(el) => {
+                                if (el && focusId === col.id) {
+                                  el.focus();
+                                  el.select();
+                                  setFocusId(null);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const v = e.currentTarget.value.trim();
+                                if (v && v !== col.title) onRename(col.id, v);
+                                else e.currentTarget.value = col.title;
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                                if (e.key === "Escape") {
+                                  e.currentTarget.value = col.title;
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              className={cn(
+                                "min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-[13px] outline-none select-text",
+                                "transition-colors duration-150 hover:bg-black/[0.04] focus:bg-black/[0.06] dark:hover:bg-white/[0.06] dark:focus:bg-white/10",
+                                "focus:ring-2 focus:ring-sky-500/50",
+                              )}
+                            />
 
-                <IconButton
-                  label={
-                    !pinned
-                      ? "Fixar daqui em diante"
-                      : isLocked
-                        ? "Pelo menos uma coluna fica fixa"
-                        : `Desafixar (fica até ${formatDayShort(day)})`
-                  }
-                  disabled={isLocked}
-                  onClick={() => onTogglePin(col.id, !pinned)}
-                  className={cn(pinned && "text-sky-500! dark:text-sky-400!")}
-                >
-                  <PinIcon width={12} height={12} />
-                </IconButton>
+                            {col.until && (
+                              <span className="shrink-0 text-[11px] text-black/40 dark:text-white/40">
+                                {col.from === day && col.until === day
+                                  ? "só neste dia"
+                                  : `até ${formatDayShort(col.until)}`}
+                              </span>
+                            )}
 
-                <IconButton
-                  label={col.done ? "Tarefas riscadas (clique para desligar)" : "Riscar tarefas desta coluna"}
-                  onClick={() => onToggleDone(col.id, !col.done)}
-                  className={cn(col.done && "text-emerald-500! dark:text-emerald-400!")}
-                >
-                  <CheckIcon width={13} height={13} />
-                </IconButton>
+                            <IconButton
+                              label={
+                                !pinned
+                                  ? "Fixar daqui em diante"
+                                  : isLocked
+                                    ? "Pelo menos uma coluna fica fixa"
+                                    : `Desafixar (fica até ${formatDayShort(day)})`
+                              }
+                              disabled={isLocked}
+                              onClick={() => onTogglePin(col.id, !pinned)}
+                              className={cn(pinned && "text-sky-500! dark:text-sky-400!")}
+                            >
+                              <PinIcon width={12} height={12} />
+                            </IconButton>
 
-                {confirming ? (
-                  <button
-                    type="button"
-                    onClick={() => requestDelete(col)}
-                    onBlur={() => setConfirmDelete(null)}
-                    autoFocus
-                    className="shrink-0 rounded-md bg-red-500 px-2 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-red-600"
-                  >
-                    Excluir {count} {count === 1 ? "tarefa" : "tarefas"}?
-                  </button>
-                ) : (
-                  !isLocked && (
-                    <IconButton label="Excluir coluna" tone="danger" onClick={() => requestDelete(col)}>
-                      <TrashIcon width={13} height={13} />
-                    </IconButton>
-                  )
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                            <IconButton
+                              label={
+                                col.done ? "Tarefas riscadas (clique para desligar)" : "Riscar tarefas desta coluna"
+                              }
+                              onClick={() => onToggleDone(col.id, !col.done)}
+                              className={cn(col.done && "text-emerald-500! dark:text-emerald-400!")}
+                            >
+                              <CheckIcon width={13} height={13} />
+                            </IconButton>
+
+                            {confirming ? (
+                              <button
+                                type="button"
+                                onClick={() => requestDelete(col)}
+                                onBlur={() => setConfirmDelete(null)}
+                                autoFocus
+                                className="shrink-0 rounded-md bg-red-500 px-2 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-red-600"
+                              >
+                                Excluir {count} {count === 1 ? "tarefa" : "tarefas"}?
+                              </button>
+                            ) : (
+                              !isLocked && (
+                                <IconButton label="Excluir coluna" tone="danger" onClick={() => requestDelete(col)}>
+                                  <TrashIcon width={13} height={13} />
+                                </IconButton>
+                              )
+                            )}
+                          </div>
+                        </li>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {listProvided.placeholder}
+              </ul>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         <div className="mt-2 border-t border-black/[0.06] pt-2 dark:border-white/[0.08]">
           <button

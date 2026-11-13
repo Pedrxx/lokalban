@@ -356,6 +356,25 @@ export function useBoard() {
     });
   }, []);
 
+  /**
+   * Reordena arrastando. Os indices sao das colunas do dia exibido; a ordem
+   * salva e global, entao a coluna entra antes (ou depois) da que ocupava
+   * o destino no dia, sem mexer na posicao das que estao escondidas
+   */
+  const moveColumn = useCallback((from: number, to: number) => {
+    if (from === to) return;
+    const day = dayRef.current;
+    setState((s) => {
+      const shown = columnsOn(s, day);
+      const moved = shown[from];
+      const target = shown[to];
+      if (!moved || !target) return s;
+      const columns = s.columns.filter((c) => c.id !== moved.id);
+      columns.splice(columns.indexOf(target) + (to > from ? 1 : 0), 0, moved);
+      return { ...s, columns };
+    });
+  }, []);
+
   /** Exclui a coluna e as tarefas dela em todos os dias (sempre sobra uma fixa) */
   const deleteColumn = useCallback((id: ColumnId) => {
     const day = dayRef.current;
@@ -428,6 +447,7 @@ export function useBoard() {
     recolorColumn,
     setColumnDone,
     setColumnPinned,
+    moveColumn,
     deleteColumn,
   };
 }
