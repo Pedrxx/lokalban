@@ -1,4 +1,5 @@
 import type { DayKey } from "./lib/date";
+import type { Scale } from "./lib/scale";
 import type { ThemePref } from "./lib/theme";
 
 export type ColumnId = string;
@@ -59,9 +60,11 @@ export type Settings = {
   pendingToToday: boolean;
   /** aparencia: automatico (segue o Windows), claro ou escuro */
   theme: ThemePref;
+  /** escala do app (zoom): 0.9, 1, 1.1 ou 1.25 */
+  scale: Scale;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto" };
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1 };
 
 export type BoardState = {
   columns: ColumnDef[];

@@ -16,6 +16,7 @@ import { useTheme } from "./hooks/useTheme";
 import type { ColumnId } from "./types";
 import { cn } from "./lib/cn";
 import { formatDayShort } from "./lib/date";
+import { applyScale } from "./lib/scale";
 
 /** Popover aberto na barra de titulo (um por vez) */
 type Panel = "calendar" | "columns" | "settings" | null;
@@ -23,9 +24,15 @@ type Panel = "calendar" | "columns" | "settings" | null;
 const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90";
 
 export default function App() {
-  const win = useWindowControls();
   const board = useBoard();
-  useTheme(board.settings.theme, board.ready);
+  const { theme, scale } = board.settings;
+  const win = useWindowControls(scale);
+  useTheme(theme, board.ready);
+
+  // escala do board.json (antes de ler, vale a copia aplicada no main.tsx)
+  useEffect(() => {
+    if (board.ready) applyScale(scale);
+  }, [board.ready, scale]);
   const [composing, setComposing] = useState<ColumnId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   /** tarefa cujo mini calendario esta aberto, e o botao onde ancorar */
@@ -195,8 +202,10 @@ export default function App() {
       <SettingsPopover
         open={panel === "settings"}
         onClose={closePanel}
-        theme={board.settings.theme}
+        theme={theme}
         onThemeChange={board.setTheme}
+        scale={scale}
+        onScaleChange={board.setScale}
       />
 
       <ColumnSettings

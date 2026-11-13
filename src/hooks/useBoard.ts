@@ -14,6 +14,7 @@ import {
 } from "../types";
 import { readBoard, writeBoard, type RawBoard } from "../lib/storage";
 import { dayKey, isDayKey, type DayKey } from "../lib/date";
+import { isScale, type Scale } from "../lib/scale";
 import { isThemePref, type ThemePref } from "../lib/theme";
 import { useToday } from "./useToday";
 
@@ -38,6 +39,7 @@ function parseSettings(raw: unknown): Settings {
   return {
     pendingToToday: typeof s.pendingToToday === "boolean" ? s.pendingToToday : DEFAULT_SETTINGS.pendingToToday,
     theme: isThemePref(s.theme) ? s.theme : DEFAULT_SETTINGS.theme,
+    scale: isScale(s.scale) ? s.scale : DEFAULT_SETTINGS.scale,
   };
 }
 
@@ -397,6 +399,10 @@ export function useBoard() {
     setState((s) => ({ ...s, settings: { ...s.settings, theme } }));
   }, []);
 
+  const setScale = useCallback((scale: Scale) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, scale } }));
+  }, []);
+
   // ---------------------------------------------------------------- dias
 
   /** Tarefas do dia exibido, por coluna */
@@ -437,6 +443,7 @@ export function useBoard() {
     settings: state.settings,
     setPendingToToday,
     setTheme,
+    setScale,
     columns: dayColumns,
     lockedColumns,
     tasks: dayTasks,

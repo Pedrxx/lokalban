@@ -47,6 +47,47 @@
     inset 0 1px 0 0 var(--glass-highlight);
 }
 
+/* Slider no estilo macOS (input range): trilho fino e botao branco redondo.
+   So o -webkit-: o WebView2 do app e o Chromium do preview usam ele */
+@utility range-mac {
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: rgb(0 0 0 / 0.12);
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 9999px;
+    background: white;
+    box-shadow:
+      0 0 0 0.5px rgb(0 0 0 / 0.2),
+      0 1px 3px rgb(0 0 0 / 0.3);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+      0 0 0 3px rgb(14 165 233 / 0.55),
+      0 1px 3px rgb(0 0 0 / 0.3);
+  }
+
+  :where([data-theme="dark"]) &::-webkit-slider-runnable-track {
+    background: rgb(255 255 255 / 0.18);
+  }
+}
+
 /* Barra de rolagem fina e discreta, no estilo macOS */
 @utility scroll-thin {
   scrollbar-width: thin;

@@ -37,7 +37,7 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 - ⚙️ **Colunas configuráveis** — renomear, criar (até 5), escolher a cor (paleta do macOS), reordenar arrastando, marcar como "concluída", fixar em todos os dias ou deixar só num dia
 - 📌 **Ícone na bandeja** — mostrar/esconder, iniciar com o Windows, abrir a pasta dos dados, sair
 - 💾 **Seus dados num JSON** — `%APPDATA%\com.lokalban.widget\board.json`, com backup automático da versão anterior
-- 📍 Lembra posição e tamanho da janela · ⌨️ `Ctrl+N` cria tarefa · uma única instância
+- 📍 Lembra posição e tamanho da janela · 🔍 escala de 90% a 125% nas Configurações · ⌨️ `Ctrl+N` cria tarefa · uma única instância
 
 ## Instalação
 

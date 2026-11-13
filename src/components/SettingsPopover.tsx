@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { ThemePref } from "../lib/theme";
+import { SCALES, type Scale } from "../lib/scale";
 import { cn } from "../lib/cn";
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
@@ -13,10 +14,14 @@ type Props = {
   onClose: () => void;
   theme: ThemePref;
   onThemeChange: (theme: ThemePref) => void;
+  scale: Scale;
+  onScaleChange: (scale: Scale) => void;
 };
 
+const percent = (scale: Scale) => `${Math.round(scale * 100)}%`;
+
 /** Popover da engrenagem: preferencias do app */
-export function SettingsPopover({ open, onClose, theme, onThemeChange }: Props) {
+export function SettingsPopover({ open, onClose, theme, onThemeChange, scale, onScaleChange }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -78,6 +83,51 @@ export function SettingsPopover({ open, onClose, theme, onThemeChange }: Props) 
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 px-1 pt-2 pb-1">
+          <label htmlFor="settings-scale" className="pt-0.5 text-[13px] text-black/75 dark:text-white/80">
+            Escala
+          </label>
+
+          {/* slider que encaixa nas 4 escalas, com as marcas embaixo */}
+          <div className="w-[196px]">
+            <input
+              id="settings-scale"
+              type="range"
+              min={0}
+              max={SCALES.length - 1}
+              step={1}
+              value={SCALES.indexOf(scale)}
+              aria-valuetext={percent(scale)}
+              onChange={(e) => onScaleChange(SCALES[Number(e.currentTarget.value)])}
+              className="range-mac block w-full"
+            />
+            {/* marcas alinhadas ao centro do botao nas pontas (meia largura dele) */}
+            <div className="flex justify-between px-2">
+              {SCALES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => onScaleChange(s)}
+                  className="flex w-0 flex-col items-center gap-0.5"
+                >
+                  <span className="h-1 w-px bg-black/25 dark:bg-white/30" />
+                  <span
+                    className={cn(
+                      "text-[10px] tabular-nums transition-colors duration-150 ease-mac",
+                      s === scale
+                        ? "font-semibold text-black/75 dark:text-white/85"
+                        : "text-black/40 dark:text-white/40",
+                    )}
+                  >
+                    {percent(s)}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
