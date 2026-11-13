@@ -7,7 +7,7 @@ import { ColumnSettings } from "./components/ColumnSettings";
 import { CalendarPopover } from "./components/CalendarPopover";
 import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
-import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
+import { CalendarIcon, PlusIcon } from "./components/icons";
 import { UndoToast } from "./components/UndoToast";
 import { useWindowControls } from "./hooks/useWindowControls";
 import { useBoard } from "./hooks/useBoard";
@@ -93,7 +93,11 @@ export default function App() {
                 {formatDayShort(board.day)}
               </button>
             )}
-            <IconButton label="Nova tarefa (Ctrl+N)" onClick={newTask}>
+            <IconButton
+              label="Colunas"
+              onClick={() => togglePanel("columns")}
+              className={cn(panel === "columns" && activeButton)}
+            >
               <PlusIcon />
             </IconButton>
             <IconButton
@@ -102,13 +106,6 @@ export default function App() {
               className={cn(panel === "calendar" && activeButton)}
             >
               <CalendarIcon />
-            </IconButton>
-            <IconButton
-              label="Colunas"
-              onClick={() => togglePanel("columns")}
-              className={cn(panel === "columns" && activeButton)}
-            >
-              <GearIcon />
             </IconButton>
           </>
         }

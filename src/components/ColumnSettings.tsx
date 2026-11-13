@@ -22,7 +22,7 @@ type Props = {
   onDelete: (id: ColumnId) => void;
 };
 
-/** Painel da engrenagem: criar, renomear, trocar cor, fixar e excluir colunas */
+/** Painel do "+": criar, renomear, trocar cor, fixar e excluir colunas */
 export function ColumnSettings({
   open,
   onClose,
