@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { COLOR_KEYS, COLUMN_COLORS, MAX_COLUMNS, type ColumnColor, type ColumnDef, type ColumnId } from "../types";
+import { COLUMN_COLORS, MAX_COLUMNS, type ColumnColor, type ColumnDef, type ColumnId } from "../types";
 import { cn } from "../lib/cn";
 import { formatDayShort, type DayKey } from "../lib/date";
+import { ColorPicker } from "./ColorPicker";
 import { IconButton } from "./IconButton";
 import { CheckIcon, PinIcon, PlusIcon, TrashIcon } from "./icons";
 
@@ -39,18 +40,24 @@ export function ColumnSettings({
 }: Props) {
   const [focusId, setFocusId] = useState<ColumnId | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ColumnId | null>(null);
+  /** coluna com o seletor de cor aberto */
+  const [coloring, setColoring] = useState<ColumnId | null>(null);
 
   useEffect(() => {
     if (!open) {
       setConfirmDelete(null);
+      setColoring(null);
       return;
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !(e.target instanceof HTMLInputElement)) onClose();
+      if (e.key !== "Escape" || e.target instanceof HTMLInputElement) return;
+      // Esc fecha primeiro o seletor de cor, depois o painel
+      if (coloring) setColoring(null);
+      else onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, coloring]);
 
   if (!open) return null;
 
@@ -81,6 +88,9 @@ export function ColumnSettings({
           "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
         )}
       >
+        {/* com o seletor de cor aberto, clique em outro ponto do painel fecha so ele */}
+        {coloring && <div className="absolute inset-0 z-10" onMouseDown={() => setColoring(null)} />}
+
         <h3 className="px-1 pb-2 text-[12px] font-semibold text-black/50 dark:text-white/50">Colunas</h3>
 
         <ul className="flex flex-col gap-1">
@@ -91,17 +101,30 @@ export function ColumnSettings({
             const isLocked = locked.has(col.id);
             return (
               <li key={col.id} className="flex items-center gap-1.5 rounded-lg px-1 py-0.5">
-                <button
-                  type="button"
-                  title="Trocar cor"
-                  aria-label="Trocar cor"
-                  onClick={() => onRecolor(col.id, nextColor(col.color))}
-                  className={cn(
-                    "size-3.5 shrink-0 rounded-full transition-transform duration-150 ease-spring hover:scale-125 active:scale-95",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500",
-                    COLUMN_COLORS[col.color],
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    title="Cor da coluna"
+                    aria-label="Cor da coluna"
+                    aria-expanded={coloring === col.id}
+                    onClick={() => setColoring((c) => (c === col.id ? null : col.id))}
+                    className={cn(
+                      "block size-3.5 rounded-full transition-transform duration-150 ease-spring hover:scale-125 active:scale-95",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500",
+                      COLUMN_COLORS[col.color],
+                    )}
+                  />
+                  {coloring === col.id && (
+                    <ColorPicker
+                      value={col.color}
+                      onSelect={(color) => {
+                        onRecolor(col.id, color);
+                        setColoring(null);
+                      }}
+                      className="absolute top-full -left-2.5 z-20 mt-2 origin-top-left"
+                    />
                   )}
-                />
+                </div>
 
                 <input
                   key={col.title}
@@ -208,8 +231,4 @@ export function ColumnSettings({
       </div>
     </>
   );
-}
-
-function nextColor(current: ColumnColor): ColumnColor {
-  return COLOR_KEYS[(COLOR_KEYS.indexOf(current) + 1) % COLOR_KEYS.length];
 }

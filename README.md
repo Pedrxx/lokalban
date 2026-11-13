@@ -34,7 +34,7 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 - 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, fixar acima das janelas
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)
-- ⚙️ **Colunas configuráveis** — renomear, criar (até 5), trocar cor, marcar como "concluída", fixar em todos os dias ou deixar só num dia
+- ⚙️ **Colunas configuráveis** — renomear, criar (até 5), escolher a cor (paleta do macOS), marcar como "concluída", fixar em todos os dias ou deixar só num dia
 - 📌 **Ícone na bandeja** — mostrar/esconder, iniciar com o Windows, abrir a pasta dos dados, sair
 - 💾 **Seus dados num JSON** — `%APPDATA%\com.lokalban.widget\board.json`, com backup automático da versão anterior
 - 📍 Lembra posição e tamanho da janela · ⌨️ `Ctrl+N` cria tarefa · uma única instância

@@ -10,18 +10,35 @@ export type Task = {
   date: DayKey;
 };
 
-/** Cores disponiveis para a bolinha da coluna (classes estaticas p/ o Tailwind) */
+/**
+ * Cores da bolinha da coluna, na ordem da paleta de destaque do macOS
+ * (classes estaticas p/ o Tailwind). As chaves ficam no board.json
+ */
 export const COLUMN_COLORS = {
   sky: "bg-sky-400",
-  amber: "bg-amber-400",
-  emerald: "bg-emerald-400",
   violet: "bg-violet-400",
   rose: "bg-rose-400",
+  red: "bg-red-500",
+  orange: "bg-orange-400",
+  amber: "bg-amber-400",
+  emerald: "bg-emerald-400",
   slate: "bg-slate-400",
 } as const;
 
 export type ColumnColor = keyof typeof COLUMN_COLORS;
 export const COLOR_KEYS = Object.keys(COLUMN_COLORS) as ColumnColor[];
+
+/** Nomes das cores (dicas do seletor) */
+export const COLOR_NAMES: Record<ColumnColor, string> = {
+  sky: "Azul",
+  violet: "Roxo",
+  rose: "Rosa",
+  red: "Vermelho",
+  orange: "Laranja",
+  amber: "Amarelo",
+  emerald: "Verde",
+  slate: "Grafite",
+};
 
 export type ColumnDef = {
   id: ColumnId;
