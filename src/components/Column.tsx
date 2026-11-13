@@ -20,6 +20,10 @@ type Props = {
   onUpdate: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onPickDay: (id: string, anchor: DOMRect) => void;
+  /** tarefas animando a saida (excluidas ou levadas a outro dia) */
+  leavingIds: Set<string>;
+  /** tarefas que voltaram pelo Desfazer (entram animadas) */
+  appearingIds: Set<string>;
 };
 
 export function Column({
@@ -33,6 +37,8 @@ export function Column({
   onUpdate,
   onDelete,
   onPickDay,
+  leavingIds,
+  appearingIds,
 }: Props) {
   // o campo de nova tarefa fica na tela durante a saida e so entao desmonta
   const showComposer = usePresence(composing, 150);
@@ -96,6 +102,8 @@ export function Column({
                       onUpdate={onUpdate}
                       onDelete={onDelete}
                       onPickDay={onPickDay}
+                      leaving={leavingIds.has(task.id)}
+                      appear={appearingIds.has(task.id)}
                     />
                   ))}
                   {provided.placeholder}

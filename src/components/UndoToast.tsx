@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { UndoAction } from "../hooks/useBoard";
+import { usePresence } from "../hooks/usePresence";
 import { cn } from "../lib/cn";
 import { formatDayShort, type DayKey } from "../lib/date";
 
 const TIMEOUT_MS = 5000;
+const EXIT_MS = 200;
 
 type Props = {
   action: UndoAction | null;
@@ -20,12 +22,17 @@ export function UndoToast({ action, today, onUndo, onDismiss }: Props) {
     return () => window.clearTimeout(timer);
   }, [action, onDismiss]);
 
-  if (!action) return null;
+  // ao sumir, desce e apaga (inverso da entrada) ainda com o ultimo texto
+  const present = usePresence(!!action, EXIT_MS);
+  const shown = useRef(action);
+  if (action) shown.current = action;
+  const current = shown.current;
+  if (!present || !current) return null;
 
   const message =
-    action.kind === "delete"
+    current.kind === "delete"
       ? "Tarefa excluída"
-      : `Movida para ${action.to === today ? "hoje" : formatDayShort(action.to)}`;
+      : `Movida para ${current.to === today ? "hoje" : formatDayShort(current.to)}`;
 
   return (
     <div
@@ -33,7 +40,8 @@ export function UndoToast({ action, today, onUndo, onDismiss }: Props) {
       className={cn(
         "absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full py-1.5 pr-1.5 pl-4",
         "bg-neutral-900/90 text-[12px] text-white shadow-[0_8px_24px_rgb(0_0_0/0.25)] dark:bg-neutral-100/90 dark:text-neutral-900",
-        "transition-[opacity,translate] duration-300 ease-spring starting:translate-y-3 starting:opacity-0",
+        "transition-[opacity,translate] starting:translate-y-3 starting:opacity-0",
+        action ? "duration-300 ease-spring" : "pointer-events-none translate-y-3 opacity-0 duration-200 ease-mac",
       )}
     >
       <span className="max-w-56 truncate">{message}</span>
