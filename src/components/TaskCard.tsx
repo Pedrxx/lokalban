@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import type { Task } from "../types";
 import { cn } from "../lib/cn";
@@ -20,8 +20,22 @@ type Props = {
 export const cardSurface =
   "glass-edge rounded-card bg-white/75 shadow-[0_1px_2px_rgb(0_0_0/0.06)] dark:bg-white/[0.07]";
 
+/** Ate quanto tempo depois de criada a tarefa ainda entra com animacao */
+const ENTER_WINDOW_MS = 1000;
+/** Duracao da entrada (a classe sai depois disso) */
+const ENTER_MS = 250;
+
 export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, onDelete, onPickDay }: Props) {
   const [editing, setEditing] = useState(false);
+  // So tarefa recem-criada entra com animacao, e a classe sai logo depois:
+  // mudar de coluna (remonta o card) ou mover a coluna (reinsere no DOM)
+  // nao pode repetir a entrada, senao o card "pisca" ao soltar
+  const [entering, setEntering] = useState(() => Date.now() - task.createdAt < ENTER_WINDOW_MS);
+  useEffect(() => {
+    if (!entering) return;
+    const timer = window.setTimeout(() => setEntering(false), ENTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [entering]);
 
   return (
     <Draggable draggableId={task.id} index={index} isDragDisabled={editing}>
@@ -38,8 +52,10 @@ export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, on
             className={cn(
               cardSurface,
               "group/card relative px-3 py-2.5 text-[13px] leading-snug",
-              "transition-[background-color,box-shadow,transform,opacity] duration-200 ease-mac",
-              "starting:scale-95 starting:opacity-0",
+              // scale e rotate sao propriedades proprias no Tailwind v4 (nao transform):
+              // com elas na transicao o card "assenta" suave ao ser solto
+              "transition-[background-color,box-shadow,scale,rotate,opacity] duration-200 ease-mac",
+              entering && "starting:scale-95 starting:opacity-0",
               "hover:bg-white/95 dark:hover:bg-white/[0.11]",
               snapshot.isDragging &&
                 "scale-[1.03] rotate-[0.8deg] bg-white/95 shadow-[0_14px_34px_rgb(0_0_0/0.22)] dark:bg-[#3a3a3e]/95",
