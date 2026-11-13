@@ -156,3 +156,19 @@ html.browser-preview #root::before {
   border-radius: inherit;
   backdrop-filter: blur(40px) saturate(180%);
 }
+
+/* Movimento reduzido (Windows: Acessibilidade > Efeitos visuais > Efeitos de
+   animacao desligado): tudo fica instantaneo. 0.01ms em vez de 0 para os
+   eventos de fim de transicao continuarem disparando; !important para
+   vencer tambem os tempos que a lib de arrasto poe no style dos elementos */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
