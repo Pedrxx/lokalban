@@ -1,6 +1,6 @@
 [package]
 name = "lokalban"
-version = "0.1.0"
+version = "0.2.0"
 description = "Kanban de mesa para Windows com estetica macOS"
 authors = ["pedrxx", "LokalBan contributors"]
 license = "MIT"
