@@ -1,9 +1,13 @@
+import type { DayKey } from "./lib/date";
+
 export type ColumnId = string;
 
 export type Task = {
   id: string;
   title: string;
   createdAt: number;
+  /** dia em que a tarefa aparece no quadro */
+  date: DayKey;
 };
 
 /** Cores disponiveis para a bolinha da coluna (classes estaticas p/ o Tailwind) */
@@ -25,11 +29,24 @@ export type ColumnDef = {
   color: ColumnColor;
   /** tarefas desta coluna aparecem riscadas (ex.: "Concluido") */
   done?: boolean;
+  /** primeiro dia em que a coluna aparece (sem = desde sempre) */
+  from?: DayKey;
+  /** ultimo dia em que a coluna aparece (sem = fixa, segue nos proximos dias) */
+  until?: DayKey;
 };
+
+/** Preferencias salvas junto com o quadro (chave "settings" do board.json) */
+export type Settings = {
+  /** pendentes de dias passados vao para hoje */
+  pendingToToday: boolean;
+};
+
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true };
 
 export type BoardState = {
   columns: ColumnDef[];
   tasks: Record<ColumnId, Task[]>;
+  settings: Settings;
 };
 
 export const MAX_COLUMNS = 5;

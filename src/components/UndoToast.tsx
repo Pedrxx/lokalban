@@ -1,24 +1,31 @@
 import { useEffect } from "react";
-import type { DeletedTask } from "../hooks/useBoard";
+import type { UndoAction } from "../hooks/useBoard";
 import { cn } from "../lib/cn";
+import { formatDayShort, type DayKey } from "../lib/date";
 
 const TIMEOUT_MS = 5000;
 
 type Props = {
-  deleted: DeletedTask | null;
+  action: UndoAction | null;
+  today: DayKey;
   onUndo: () => void;
   onDismiss: () => void;
 };
 
-/** Aviso "Tarefa excluida - Desfazer", some sozinho depois de 5s */
-export function UndoToast({ deleted, onUndo, onDismiss }: Props) {
+/** Aviso "Tarefa excluida - Desfazer" (ou "Movida para..."), some sozinho depois de 5s */
+export function UndoToast({ action, today, onUndo, onDismiss }: Props) {
   useEffect(() => {
-    if (!deleted) return;
+    if (!action) return;
     const timer = window.setTimeout(onDismiss, TIMEOUT_MS);
     return () => window.clearTimeout(timer);
-  }, [deleted, onDismiss]);
+  }, [action, onDismiss]);
 
-  if (!deleted) return null;
+  if (!action) return null;
+
+  const message =
+    action.kind === "delete"
+      ? "Tarefa excluída"
+      : `Movida para ${action.to === today ? "hoje" : formatDayShort(action.to)}`;
 
   return (
     <div
@@ -29,7 +36,7 @@ export function UndoToast({ deleted, onUndo, onDismiss }: Props) {
         "transition-[opacity,translate] duration-300 ease-spring starting:translate-y-3 starting:opacity-0",
       )}
     >
-      <span className="max-w-56 truncate">Tarefa excluída</span>
+      <span className="max-w-56 truncate">{message}</span>
       <button
         type="button"
         onClick={onUndo}

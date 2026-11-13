@@ -1,38 +1,58 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { GlassWindow } from "./components/GlassWindow";
 import { TitleBar } from "./components/TitleBar";
 import { Column } from "./components/Column";
 import { ColumnSettings } from "./components/ColumnSettings";
+import { CalendarPopover } from "./components/CalendarPopover";
+import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
-import { GearIcon, PlusIcon } from "./components/icons";
+import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
 import { UndoToast } from "./components/UndoToast";
 import { useWindowControls } from "./hooks/useWindowControls";
 import { useBoard } from "./hooks/useBoard";
 import type { ColumnId } from "./types";
 import { cn } from "./lib/cn";
+import { formatDayShort } from "./lib/date";
+
+/** Popover aberto na barra de titulo (um por vez) */
+type Panel = "calendar" | "columns" | null;
+
+const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90";
 
 export default function App() {
   const win = useWindowControls();
   const board = useBoard();
   const [composing, setComposing] = useState<ColumnId | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [panel, setPanel] = useState<Panel>(null);
+  /** tarefa cujo mini calendario esta aberto, e o botao onde ancorar */
+  const [picking, setPicking] = useState<{ id: string; anchor: DOMRect } | null>(null);
 
   const { collapsed, toggleCollapse } = win;
   const firstColumn = board.columns[0]?.id ?? null;
 
   const newTask = useCallback(() => {
     if (collapsed) toggleCollapse();
-    setSettingsOpen(false);
+    setPanel(null);
+    setPicking(null);
     setComposing(firstColumn);
   }, [collapsed, toggleCollapse, firstColumn]);
 
-  const toggleSettings = useCallback(() => {
-    if (collapsed) toggleCollapse();
-    setSettingsOpen((o) => !o);
-  }, [collapsed, toggleCollapse]);
+  const togglePanel = useCallback(
+    (which: Exclude<Panel, null>) => {
+      if (collapsed) toggleCollapse();
+      setPanel((p) => (p === which ? null : which));
+    },
+    [collapsed, toggleCollapse],
+  );
 
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const closePanel = useCallback(() => setPanel(null), []);
+  const pickDay = useCallback((id: string, anchor: DOMRect) => setPicking({ id, anchor }), []);
+  const closePicker = useCallback(() => setPicking(null), []);
+
+  // com "Pendentes vao para hoje" ligada, pendente nao vai para o passado
+  const pickingColumn = picking && board.columns.find((c) => board.tasks[c.id]?.some((t) => t.id === picking.id));
+  const minDay = pickingColumn && !pickingColumn.done && board.settings.pendingToToday ? board.today : undefined;
 
   // Ctrl+N cria uma tarefa na primeira coluna
   useEffect(() => {
@@ -46,11 +66,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [newTask]);
 
-  const taskCounts = useMemo(
-    () => Object.fromEntries(board.columns.map((c) => [c.id, board.tasks[c.id]?.length ?? 0])),
-    [board.columns, board.tasks],
-  );
-
   return (
     <GlassWindow>
       <TitleBar
@@ -63,13 +78,35 @@ export default function App() {
         onTogglePin={win.togglePin}
         actions={
           <>
+            {board.day !== board.today && (
+              <button
+                type="button"
+                title="Voltar para hoje"
+                onClick={() => board.setDay(board.today)}
+                className={cn(
+                  "flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/55 dark:bg-white/10 dark:text-white/60",
+                  "transition-colors duration-150 ease-mac hover:bg-black/[0.08] hover:text-black/75 dark:hover:bg-white/15 dark:hover:text-white/80",
+                  "focus-visible:outline-2 focus-visible:outline-sky-500",
+                )}
+              >
+                <CalendarIcon width={10} height={10} strokeWidth={1.75} />
+                {formatDayShort(board.day)}
+              </button>
+            )}
             <IconButton label="Nova tarefa (Ctrl+N)" onClick={newTask}>
               <PlusIcon />
             </IconButton>
             <IconButton
+              label="Calendário"
+              onClick={() => togglePanel("calendar")}
+              className={cn(panel === "calendar" && activeButton)}
+            >
+              <CalendarIcon />
+            </IconButton>
+            <IconButton
               label="Colunas"
-              onClick={toggleSettings}
-              className={cn(settingsOpen && "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90")}
+              onClick={() => togglePanel("columns")}
+              className={cn(panel === "columns" && activeButton)}
             >
               <GearIcon />
             </IconButton>
@@ -102,25 +139,50 @@ export default function App() {
                 onAdd={(title) => board.addTask(col.id, title)}
                 onUpdate={board.updateTask}
                 onDelete={board.deleteTask}
+                onPickDay={pickDay}
               />
             ))}
           </main>
         </DragDropContext>
       )}
 
+      <CalendarPopover
+        open={panel === "calendar"}
+        onClose={closePanel}
+        day={board.day}
+        today={board.today}
+        markedDays={board.markedDays}
+        onSelect={board.setDay}
+        pendingToToday={board.settings.pendingToToday}
+        onPendingToTodayChange={board.setPendingToToday}
+      />
+
+      <MoveDayPopover
+        anchor={picking?.anchor ?? null}
+        value={board.day}
+        today={board.today}
+        markedDays={board.markedDays}
+        minDay={minDay}
+        onSelect={(day) => picking && board.moveTaskToDay(picking.id, day)}
+        onClose={closePicker}
+      />
+
       <ColumnSettings
-        open={settingsOpen}
-        onClose={closeSettings}
+        open={panel === "columns"}
+        onClose={closePanel}
+        day={board.day}
         columns={board.columns}
-        taskCounts={taskCounts}
+        locked={board.lockedColumns}
+        taskCounts={board.taskTotals}
         onAdd={board.addColumn}
         onRename={board.renameColumn}
         onRecolor={board.recolorColumn}
         onToggleDone={board.setColumnDone}
+        onTogglePin={board.setColumnPinned}
         onDelete={board.deleteColumn}
       />
 
-      <UndoToast deleted={board.lastDeleted} onUndo={board.undoDelete} onDismiss={board.dismissUndo} />
+      <UndoToast action={board.lastAction} today={board.today} onUndo={board.undo} onDismiss={board.dismissUndo} />
     </GlassWindow>
   );
 }

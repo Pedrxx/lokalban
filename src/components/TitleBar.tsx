@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { TrafficLights } from "./TrafficLights";
+import { PinIcon } from "./icons";
 import { TITLEBAR_HEIGHT } from "../hooks/useWindowControls";
 import { cn } from "../lib/cn";
 
@@ -51,20 +52,12 @@ export function TitleBar({ title, focused, collapsed, pinnedOnTop, onClose, onCo
             title="Fixado acima das janelas"
             className="flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/55 dark:bg-white/10 dark:text-white/60"
           >
-            <PinIcon />
+            <PinIcon width={10} height={10} />
             Fixado
           </span>
         )}
         {actions}
       </div>
     </header>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      <path d="M9.8 1.2a1 1 0 0 1 1.4 0l3.6 3.6a1 1 0 0 1 0 1.4l-1.1 1.1a1 1 0 0 1-1 .25L10.4 9.8l.3 2.6a1 1 0 0 1-.3.8l-.7.7a.5.5 0 0 1-.7 0L6.4 11.3 2.6 15.1a.6.6 0 0 1-.85-.85L5.6 10.4 3 7.8a.5.5 0 0 1 0-.7l.7-.7a1 1 0 0 1 .8-.3l2.6.3 2.25-2.3a1 1 0 0 1 .25-1z" />
-    </svg>
   );
 }

@@ -1,31 +1,40 @@
 import { useEffect, useState } from "react";
 import { COLOR_KEYS, COLUMN_COLORS, MAX_COLUMNS, type ColumnColor, type ColumnDef, type ColumnId } from "../types";
 import { cn } from "../lib/cn";
+import { formatDayShort, type DayKey } from "../lib/date";
 import { IconButton } from "./IconButton";
-import { CheckIcon, PlusIcon, TrashIcon } from "./icons";
+import { CheckIcon, PinIcon, PlusIcon, TrashIcon } from "./icons";
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** dia exibido: a lista mostra as colunas dele */
+  day: DayKey;
   columns: ColumnDef[];
+  /** fixas que nao podem ser desafixadas nem excluidas neste dia */
+  locked: Set<ColumnId>;
   taskCounts: Record<ColumnId, number>;
   onAdd: () => ColumnId | null;
   onRename: (id: ColumnId, title: string) => void;
   onRecolor: (id: ColumnId, color: ColumnColor) => void;
   onToggleDone: (id: ColumnId, done: boolean) => void;
+  onTogglePin: (id: ColumnId, pinned: boolean) => void;
   onDelete: (id: ColumnId) => void;
 };
 
-/** Painel da engrenagem: criar, renomear, trocar cor e excluir colunas */
+/** Painel da engrenagem: criar, renomear, trocar cor, fixar e excluir colunas */
 export function ColumnSettings({
   open,
   onClose,
+  day,
   columns,
+  locked,
   taskCounts,
   onAdd,
   onRename,
   onRecolor,
   onToggleDone,
+  onTogglePin,
   onDelete,
 }: Props) {
   const [focusId, setFocusId] = useState<ColumnId | null>(null);
@@ -45,7 +54,6 @@ export function ColumnSettings({
 
   if (!open) return null;
 
-  const canDelete = columns.length > 1;
   const atMax = columns.length >= MAX_COLUMNS;
 
   const requestDelete = (col: ColumnDef) => {
@@ -67,7 +75,7 @@ export function ColumnSettings({
         role="dialog"
         aria-label="Colunas"
         className={cn(
-          "absolute top-11 right-3 z-30 w-80 origin-top-right rounded-xl p-3",
+          "absolute top-11 right-3 z-30 w-96 origin-top-right rounded-xl p-3",
           "glass-edge bg-white/90 shadow-[0_18px_48px_rgb(0_0_0/0.25)] dark:bg-[#2a2a2d]/95",
           "transition-[opacity,scale,translate] duration-200 ease-mac",
           "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
@@ -79,6 +87,8 @@ export function ColumnSettings({
           {columns.map((col) => {
             const count = taskCounts[col.id] ?? 0;
             const confirming = confirmDelete === col.id;
+            const pinned = !col.until;
+            const isLocked = locked.has(col.id);
             return (
               <li key={col.id} className="flex items-center gap-1.5 rounded-lg px-1 py-0.5">
                 <button
@@ -124,10 +134,31 @@ export function ColumnSettings({
                   )}
                 />
 
+                {col.until && (
+                  <span className="shrink-0 text-[11px] text-black/40 dark:text-white/40">
+                    {col.from === day && col.until === day ? "só neste dia" : `até ${formatDayShort(col.until)}`}
+                  </span>
+                )}
+
+                <IconButton
+                  label={
+                    !pinned
+                      ? "Fixar daqui em diante"
+                      : isLocked
+                        ? "Pelo menos uma coluna fica fixa"
+                        : `Desafixar (fica até ${formatDayShort(day)})`
+                  }
+                  disabled={isLocked}
+                  onClick={() => onTogglePin(col.id, !pinned)}
+                  className={cn(pinned && "text-sky-500! dark:text-sky-400!")}
+                >
+                  <PinIcon width={12} height={12} />
+                </IconButton>
+
                 <IconButton
                   label={col.done ? "Tarefas riscadas (clique para desligar)" : "Riscar tarefas desta coluna"}
                   onClick={() => onToggleDone(col.id, !col.done)}
-                  className={cn(col.done && "text-emerald-500 dark:text-emerald-400")}
+                  className={cn(col.done && "text-emerald-500! dark:text-emerald-400!")}
                 >
                   <CheckIcon width={13} height={13} />
                 </IconButton>
@@ -143,7 +174,7 @@ export function ColumnSettings({
                     Excluir {count} {count === 1 ? "tarefa" : "tarefas"}?
                   </button>
                 ) : (
-                  canDelete && (
+                  !isLocked && (
                     <IconButton label="Excluir coluna" tone="danger" onClick={() => requestDelete(col)}>
                       <TrashIcon width={13} height={13} />
                     </IconButton>

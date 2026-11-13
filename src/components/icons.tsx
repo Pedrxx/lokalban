@@ -52,3 +52,36 @@ export function TrashIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="2.5" y="3.5" width="11" height="10" rx="2" />
+      <path d="M2.5 6.75h11M5.5 2v2.5M10.5 2v2.5" />
+    </svg>
+  );
+}
+
+export function PinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} fill="currentColor" stroke="none" {...props}>
+      <path d="M9.8 1.2a1 1 0 0 1 1.4 0l3.6 3.6a1 1 0 0 1 0 1.4l-1.1 1.1a1 1 0 0 1-1 .25L10.4 9.8l.3 2.6a1 1 0 0 1-.3.8l-.7.7a.5.5 0 0 1-.7 0L6.4 11.3 2.6 15.1a.6.6 0 0 1-.85-.85L5.6 10.4 3 7.8a.5.5 0 0 1 0-.7l.7-.7a1 1 0 0 1 .8-.3l2.6.3 2.25-2.3a1 1 0 0 1 .25-1z" />
+    </svg>
+  );
+}
+
+export function ChevronLeftIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M10 3.5L5.5 8l4.5 4.5" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 3.5L10.5 8 6 12.5" />
+    </svg>
+  );
+}
