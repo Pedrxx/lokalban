@@ -29,7 +29,7 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 
 ## Funcionalidades
 
-- 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas, fica atrás das outras janelas
+- 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas (dá para mostrar nas Configurações), fica atrás das outras janelas
 - 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
 - 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, maximizar e voltar ao tamanho solto; o alfinete na barra fixa acima das janelas (e o app lembra)
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas

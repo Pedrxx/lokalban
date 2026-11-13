@@ -66,6 +66,8 @@ export type Settings = {
   pinnedOnTop: boolean;
   /** botao vermelho / Alt+F4: true esconde na bandeja, false sai do app */
   closeToTray: boolean;
+  /** icone na barra de tarefas do Windows (o padrao e ficar so na bandeja) */
+  showInTaskbar: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -74,6 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scale: 1,
   pinnedOnTop: false,
   closeToTray: true,
+  showInTaskbar: false,
 };
 
 export type BoardState = {

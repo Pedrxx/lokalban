@@ -42,6 +42,7 @@ function parseSettings(raw: unknown): Settings {
     scale: isScale(s.scale) ? s.scale : DEFAULT_SETTINGS.scale,
     pinnedOnTop: typeof s.pinnedOnTop === "boolean" ? s.pinnedOnTop : DEFAULT_SETTINGS.pinnedOnTop,
     closeToTray: typeof s.closeToTray === "boolean" ? s.closeToTray : DEFAULT_SETTINGS.closeToTray,
+    showInTaskbar: typeof s.showInTaskbar === "boolean" ? s.showInTaskbar : DEFAULT_SETTINGS.showInTaskbar,
   };
 }
 
@@ -413,6 +414,10 @@ export function useBoard() {
     setState((s) => ({ ...s, settings: { ...s.settings, closeToTray } }));
   }, []);
 
+  const setShowInTaskbar = useCallback((showInTaskbar: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, showInTaskbar } }));
+  }, []);
+
   // ---------------------------------------------------------------- dias
 
   /** Tarefas do dia exibido, por coluna */
@@ -456,6 +461,7 @@ export function useBoard() {
     setScale,
     setPinnedOnTop,
     setCloseToTray,
+    setShowInTaskbar,
     columns: dayColumns,
     lockedColumns,
     tasks: dayTasks,

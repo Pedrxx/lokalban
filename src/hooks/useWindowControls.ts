@@ -24,6 +24,7 @@ export function useWindowControls({
   scale = 1,
   pinnedOnTop = false,
   closeToTray = true,
+  showInTaskbar = false,
   onPinnedChange,
 }: {
   scale?: number;
@@ -31,6 +32,8 @@ export function useWindowControls({
   pinnedOnTop?: boolean;
   /** vermelho / Alt+F4 esconde na bandeja (true) ou sai do app (false) */
   closeToTray?: boolean;
+  /** icone na barra de tarefas (o tauri.conf.json comeca sem) */
+  showInTaskbar?: boolean;
   onPinnedChange: (pinned: boolean) => void;
 }) {
   const [focused, setFocused] = useState(true);
@@ -58,6 +61,13 @@ export function useWindowControls({
       console.error("Falha ao configurar o fechamento:", err),
     );
   }, [closeToTray]);
+
+  useEffect(() => {
+    if (!inTauri) return;
+    getCurrentWindow()
+      .setSkipTaskbar(!showInTaskbar)
+      .catch((err) => console.error("Falha ao alterar o icone na barra de tarefas:", err));
+  }, [showInTaskbar]);
 
   // trocar a escala com a janela recolhida ajusta a altura dela
   useEffect(() => {

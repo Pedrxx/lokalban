@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { ThemePref } from "../lib/theme";
 import { SCALES, type Scale } from "../lib/scale";
 import { cn } from "../lib/cn";
+import { Switch } from "./Switch";
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
   { value: "auto", label: "Automático" },
@@ -25,6 +26,8 @@ type Props = {
   onScaleChange: (scale: Scale) => void;
   closeToTray: boolean;
   onCloseToTrayChange: (closeToTray: boolean) => void;
+  showInTaskbar: boolean;
+  onShowInTaskbarChange: (show: boolean) => void;
 };
 
 const percent = (scale: Scale) => `${Math.round(scale * 100)}%`;
@@ -39,6 +42,8 @@ export function SettingsPopover({
   onScaleChange,
   closeToTray,
   onCloseToTrayChange,
+  showInTaskbar,
+  onShowInTaskbarChange,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -131,6 +136,11 @@ export function SettingsPopover({
             value={closeToTray ? "tray" : "quit"}
             onChange={(v) => onCloseToTrayChange(v === "tray")}
           />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-1 pt-2.5 pb-1">
+          <span className="text-[13px] text-black/75 dark:text-white/80">Mostrar na barra de tarefas</span>
+          <Switch label="Mostrar na barra de tarefas" checked={showInTaskbar} onChange={onShowInTaskbarChange} />
         </div>
       </div>
     </>
