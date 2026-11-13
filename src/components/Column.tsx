@@ -1,8 +1,10 @@
+import { useRef } from "react";
 import { Draggable, Droppable } from "@hello-pangea/dnd";
 import { COLUMN_COLORS, type ColumnDef, type Task } from "../types";
 import { cn } from "../lib/cn";
 import { PlusIcon } from "./icons";
 import { KeyTip } from "./KeyTip";
+import { usePresence } from "../hooks/usePresence";
 import { TaskCard, cardSurface } from "./TaskCard";
 import { TaskEditor } from "./TaskEditor";
 
@@ -32,6 +34,15 @@ export function Column({
   onDelete,
   onPickDay,
 }: Props) {
+  // o campo de nova tarefa fica na tela durante a saida e so entao desmonta
+  const showComposer = usePresence(composing, 150);
+  // cada abertura ganha um editor novo (vazio, com foco e aceitando Esc), mesmo
+  // reabrindo durante a saida; o involucro e o mesmo, entao a animacao so inverte
+  const composeSession = useRef(0);
+  const wasComposing = useRef(composing);
+  if (composing && !wasComposing.current) composeSession.current += 1;
+  wasComposing.current = composing;
+
   return (
     <Draggable draggableId={`column:${column.id}`} index={index}>
       {(dragProvided, dragSnapshot) => (
@@ -89,12 +100,24 @@ export function Column({
                   ))}
                   {provided.placeholder}
 
-                  {composing ? (
-                    <div className={cn(cardSurface, "mb-2 px-3 py-2.5 ring-2 ring-sky-500/60")}>
-                      <TaskEditor stayOpen onSubmit={onAdd} onClose={onEndCompose} />
-                      <p className="mt-1.5 text-[11px] text-black/35 dark:text-white/35">
-                        Enter salva · Shift+Enter quebra linha · Esc cancela
-                      </p>
+                  {showComposer ? (
+                    // cresce da altura 0 ao surgir e recolhe ao fechar (height ate auto
+                    // via interpolate-size); flow-root conta a margem do card na altura e
+                    // o clip com margem deixa o anel azul de foco aparecer inteiro
+                    <div
+                      className={cn(
+                        "flow-root overflow-clip [overflow-clip-margin:4px]",
+                        "transition-[height,opacity,translate] ease-mac",
+                        "starting:h-0 starting:-translate-y-1 starting:opacity-0",
+                        composing ? "h-auto duration-200" : "h-0 -translate-y-1 opacity-0 duration-150",
+                      )}
+                    >
+                      <div className={cn(cardSurface, "mb-2 px-3 py-2.5 ring-2 ring-sky-500/60")}>
+                        <TaskEditor key={composeSession.current} stayOpen onSubmit={onAdd} onClose={onEndCompose} />
+                        <p className="mt-1.5 text-[11px] text-black/35 dark:text-white/35">
+                          Enter salva · Shift+Enter quebra linha · Esc cancela
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     tasks.length === 0 &&

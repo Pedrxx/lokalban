@@ -29,6 +29,8 @@
   --glass-highlight: rgb(255 255 255 / 0.65);
   --panel: rgb(0 0 0 / 0.035);
   color-scheme: light;
+  /* deixa transicionar height ate "auto" (campo de nova tarefa, cards saindo) */
+  interpolate-size: allow-keywords;
 }
 
 :root[data-theme="dark"] {

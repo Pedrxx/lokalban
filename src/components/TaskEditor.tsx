@@ -49,6 +49,9 @@ export function TaskEditor({ initial = "", placeholder = "Descreva a tarefa…",
       value={value}
       placeholder={placeholder}
       onChange={(e) => setValue(e.target.value)}
+      // voltou o foco sem ter fechado (ex.: clique rapido em "Nova tarefa"
+      // com o campo aberto): Enter e Esc voltam a valer
+      onFocus={() => (finished.current = false)}
       onBlur={() => finish(true)}
       onKeyDown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {

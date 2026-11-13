@@ -1,5 +1,10 @@
 import { cn } from "./cn";
 
+/** "Efeitos de animacao" desligado no Windows (o CSS ja zera as duracoes) */
+export function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /**
  * Abrir e fechar no estilo macOS, so com CSS. O elemento continua montado:
  * fechado ele fica display:none, e com transition-discrete o display so muda
