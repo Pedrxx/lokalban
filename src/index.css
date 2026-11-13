@@ -66,8 +66,19 @@
     cursor: default;
   }
 
-  button {
+  /* Cursores: mao no que e clicavel, I no que e digitavel. O "agarrar"
+     dos cards vem da lib de arrasto (grab parado, grabbing arrastando) */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
     cursor: default;
+  }
+
+  input,
+  textarea {
+    cursor: text;
   }
 }
 

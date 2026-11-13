@@ -42,7 +42,8 @@ export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, on
               snapshot.isDragging &&
                 "scale-[1.03] rotate-[0.8deg] bg-white/95 shadow-[0_14px_34px_rgb(0_0_0/0.22)] dark:bg-[#3a3a3e]/95",
               "ring-sky-500/60 group-focus-visible/handle:ring-2",
-              editing && "ring-2",
+              // editando, o card nao arrasta: nao mostra a mao de agarrar
+              editing && "cursor-default ring-2",
             )}
           >
             {editing ? (
