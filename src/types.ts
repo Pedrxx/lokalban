@@ -1,9 +1,13 @@
+import type { DayKey } from "./lib/date";
+
 export type ColumnId = string;
 
 export type Task = {
   id: string;
   title: string;
   createdAt: number;
+  /** dia em que a tarefa aparece no quadro */
+  date: DayKey;
 };
 
 /** Cores disponiveis para a bolinha da coluna (classes estaticas p/ o Tailwind) */

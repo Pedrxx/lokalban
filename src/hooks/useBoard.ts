@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DropResult } from "@hello-pangea/dnd";
 import {
   COLOR_KEYS,
@@ -11,6 +11,8 @@ import {
   type Task,
 } from "../types";
 import { readBoard, writeBoard, type RawBoard } from "../lib/storage";
+import { dayKey, isDayKey, type DayKey } from "../lib/date";
+import { useToday } from "./useToday";
 
 function isTask(value: unknown): value is Task {
   const t = value as Task;
@@ -22,11 +24,17 @@ function isColumn(value: unknown): value is ColumnDef {
   return typeof c === "object" && c !== null && typeof c.id === "string" && typeof c.title === "string";
 }
 
+/** Tarefas sem data (versoes anteriores ao calendario) passam a ser de hoje */
+function withDate(task: Task, today: DayKey): Task {
+  return isDayKey(task.date) ? task : { ...task, date: today };
+}
+
 function withDefaults(columns: ColumnDef[], rawTasks: Record<string, unknown>): BoardState {
+  const today = dayKey();
   const tasks: Record<ColumnId, Task[]> = {};
   for (const col of columns) {
     const list = rawTasks[col.id];
-    tasks[col.id] = Array.isArray(list) ? list.filter(isTask) : [];
+    tasks[col.id] = Array.isArray(list) ? list.filter(isTask).map((t) => withDate(t, today)) : [];
   }
   return { columns, tasks };
 }
@@ -58,8 +66,20 @@ export function useBoard() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lastDeleted, setLastDeleted] = useState<DeletedTask | null>(null);
 
+  // Dia exibido no quadro. Sempre abre em hoje e acompanha a virada do dia
+  const today = useToday();
+  const [day, setDay] = useState<DayKey>(today);
+  const prevToday = useRef(today);
+  useEffect(() => {
+    const prev = prevToday.current;
+    prevToday.current = today;
+    setDay((d) => (d === prev ? today : d));
+  }, [today]);
+
   const stateRef = useRef(state);
   stateRef.current = state;
+  const dayRef = useRef(day);
+  dayRef.current = day;
   const lastDeletedRef = useRef(lastDeleted);
   lastDeletedRef.current = lastDeleted;
 
@@ -93,7 +113,7 @@ export function useBoard() {
   const addTask = useCallback((column: ColumnId, title: string) => {
     const text = title.trim();
     if (!text) return;
-    const task: Task = { id: crypto.randomUUID(), title: text, createdAt: Date.now() };
+    const task: Task = { id: crypto.randomUUID(), title: text, createdAt: Date.now(), date: dayRef.current };
     setState((s) => (s.tasks[column] ? { ...s, tasks: { ...s.tasks, [column]: [...s.tasks[column], task] } } : s));
   }, []);
 
@@ -137,25 +157,33 @@ export function useBoard() {
 
   const dismissUndo = useCallback(() => setLastDeleted(null), []);
 
-  /** Handler do onDragEnd do DragDropContext */
+  /**
+   * Handler do onDragEnd do DragDropContext. Os indices do arrasto sao da
+   * lista do dia exibido; aqui viram posicoes na lista completa da coluna.
+   */
   const moveTask = useCallback(({ source, destination }: DropResult) => {
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     const from = source.droppableId;
     const to = destination.droppableId;
+    const shown = dayRef.current;
 
     setState((s) => {
       if (!s.tasks[from] || !s.tasks[to]) return s;
-      const src = [...s.tasks[from]];
-      const [moved] = src.splice(source.index, 1);
+      const moved = s.tasks[from].filter((t) => t.date === shown)[source.index];
       if (!moved) return s;
-      if (from === to) {
-        src.splice(destination.index, 0, moved);
-        return { ...s, tasks: { ...s.tasks, [from]: src } };
-      }
-      const dst = [...s.tasks[to]];
-      dst.splice(destination.index, 0, moved);
+      const src = s.tasks[from].filter((t) => t.id !== moved.id);
+      const dst = from === to ? src : [...s.tasks[to]];
+
+      // entra antes da tarefa que hoje ocupa a posicao de destino no dia,
+      // ou logo depois da ultima tarefa do dia
+      const sameDay = dst.filter((t) => t.date === shown);
+      const anchor = sameDay[destination.index];
+      const last = sameDay[sameDay.length - 1];
+      const at = anchor ? dst.indexOf(anchor) : last ? dst.indexOf(last) + 1 : dst.length;
+      dst.splice(at, 0, moved);
+
       return { ...s, tasks: { ...s.tasks, [from]: src, [to]: dst } };
     });
   }, []);
@@ -194,11 +222,37 @@ export function useBoard() {
     });
   }, []);
 
+  // ---------------------------------------------------------------- dias
+
+  /** Tarefas do dia exibido, por coluna */
+  const dayTasks = useMemo(() => {
+    const tasks: BoardState["tasks"] = {};
+    for (const [col, list] of Object.entries(state.tasks)) tasks[col] = list.filter((t) => t.date === day);
+    return tasks;
+  }, [state.tasks, day]);
+
+  /** Total de tarefas por coluna, somando todos os dias */
+  const taskTotals = useMemo(
+    () => Object.fromEntries(Object.entries(state.tasks).map(([col, list]) => [col, list.length])),
+    [state.tasks],
+  );
+
+  /** Dias que tem alguma tarefa (pontinhos do calendario) */
+  const markedDays = useMemo(
+    () => new Set(Object.values(state.tasks).flatMap((list) => list.map((t) => t.date))),
+    [state.tasks],
+  );
+
   return {
     ready,
     loadError,
+    today,
+    day,
+    setDay,
+    markedDays,
     columns: state.columns,
-    tasks: state.tasks,
+    tasks: dayTasks,
+    taskTotals,
     addTask,
     updateTask,
     deleteTask,
