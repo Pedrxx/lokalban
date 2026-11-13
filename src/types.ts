@@ -1,4 +1,5 @@
 import type { DayKey } from "./lib/date";
+import type { ThemePref } from "./lib/theme";
 
 export type ColumnId = string;
 
@@ -56,9 +57,11 @@ export type ColumnDef = {
 export type Settings = {
   /** pendentes de dias passados vao para hoje */
   pendingToToday: boolean;
+  /** aparencia: automatico (segue o Windows), claro ou escuro */
+  theme: ThemePref;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true };
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto" };
 
 export type BoardState = {
   columns: ColumnDef[];

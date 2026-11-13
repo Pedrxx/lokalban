@@ -14,6 +14,7 @@ import {
 } from "../types";
 import { readBoard, writeBoard, type RawBoard } from "../lib/storage";
 import { dayKey, isDayKey, type DayKey } from "../lib/date";
+import { isThemePref, type ThemePref } from "../lib/theme";
 import { useToday } from "./useToday";
 
 function isTask(value: unknown): value is Task {
@@ -36,6 +37,7 @@ function parseSettings(raw: unknown): Settings {
   const s = (raw ?? {}) as Partial<Settings>;
   return {
     pendingToToday: typeof s.pendingToToday === "boolean" ? s.pendingToToday : DEFAULT_SETTINGS.pendingToToday,
+    theme: isThemePref(s.theme) ? s.theme : DEFAULT_SETTINGS.theme,
   };
 }
 
@@ -391,6 +393,10 @@ export function useBoard() {
     setState((s) => ({ ...s, settings: { ...s.settings, pendingToToday: on } }));
   }, []);
 
+  const setTheme = useCallback((theme: ThemePref) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, theme } }));
+  }, []);
+
   // ---------------------------------------------------------------- dias
 
   /** Tarefas do dia exibido, por coluna */
@@ -430,6 +436,7 @@ export function useBoard() {
     markedDays,
     settings: state.settings,
     setPendingToToday,
+    setTheme,
     columns: dayColumns,
     lockedColumns,
     tasks: dayTasks,

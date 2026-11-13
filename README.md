@@ -30,7 +30,7 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 ## Funcionalidades
 
 - 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas, fica atrás das outras janelas
-- 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro/escuro automático
+- 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
 - 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, fixar acima das janelas
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)

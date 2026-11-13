@@ -7,22 +7,25 @@ import { ColumnSettings } from "./components/ColumnSettings";
 import { CalendarPopover } from "./components/CalendarPopover";
 import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
-import { CalendarIcon, PlusIcon } from "./components/icons";
+import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
+import { SettingsPopover } from "./components/SettingsPopover";
 import { UndoToast } from "./components/UndoToast";
 import { useWindowControls } from "./hooks/useWindowControls";
 import { useBoard } from "./hooks/useBoard";
+import { useTheme } from "./hooks/useTheme";
 import type { ColumnId } from "./types";
 import { cn } from "./lib/cn";
 import { formatDayShort } from "./lib/date";
 
 /** Popover aberto na barra de titulo (um por vez) */
-type Panel = "calendar" | "columns" | null;
+type Panel = "calendar" | "columns" | "settings" | null;
 
 const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90";
 
 export default function App() {
   const win = useWindowControls();
   const board = useBoard();
+  useTheme(board.settings.theme, board.ready);
   const [composing, setComposing] = useState<ColumnId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   /** tarefa cujo mini calendario esta aberto, e o botao onde ancorar */
@@ -117,6 +120,13 @@ export default function App() {
             >
               <CalendarIcon />
             </IconButton>
+            <IconButton
+              label="Configurações"
+              onClick={() => togglePanel("settings")}
+              className={cn(panel === "settings" && activeButton)}
+            >
+              <GearIcon />
+            </IconButton>
           </>
         }
       />
@@ -180,6 +190,13 @@ export default function App() {
         minDay={minDay}
         onSelect={(day) => picking && board.moveTaskToDay(picking.id, day)}
         onClose={closePicker}
+      />
+
+      <SettingsPopover
+        open={panel === "settings"}
+        onClose={closePanel}
+        theme={board.settings.theme}
+        onThemeChange={board.setTheme}
       />
 
       <ColumnSettings
