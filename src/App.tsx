@@ -5,6 +5,7 @@ import { TitleBar } from "./components/TitleBar";
 import { Column } from "./components/Column";
 import { ColumnSettings } from "./components/ColumnSettings";
 import { CalendarPopover } from "./components/CalendarPopover";
+import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
 import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
 import { UndoToast } from "./components/UndoToast";
@@ -24,6 +25,8 @@ export default function App() {
   const board = useBoard();
   const [composing, setComposing] = useState<ColumnId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
+  /** tarefa cujo mini calendario esta aberto, e o botao onde ancorar */
+  const [picking, setPicking] = useState<{ id: string; anchor: DOMRect } | null>(null);
 
   const { collapsed, toggleCollapse } = win;
   const firstColumn = board.columns[0]?.id ?? null;
@@ -31,6 +34,7 @@ export default function App() {
   const newTask = useCallback(() => {
     if (collapsed) toggleCollapse();
     setPanel(null);
+    setPicking(null);
     setComposing(firstColumn);
   }, [collapsed, toggleCollapse, firstColumn]);
 
@@ -43,6 +47,8 @@ export default function App() {
   );
 
   const closePanel = useCallback(() => setPanel(null), []);
+  const pickDay = useCallback((id: string, anchor: DOMRect) => setPicking({ id, anchor }), []);
+  const closePicker = useCallback(() => setPicking(null), []);
 
   // Ctrl+N cria uma tarefa na primeira coluna
   useEffect(() => {
@@ -129,6 +135,7 @@ export default function App() {
                 onAdd={(title) => board.addTask(col.id, title)}
                 onUpdate={board.updateTask}
                 onDelete={board.deleteTask}
+                onPickDay={pickDay}
               />
             ))}
           </main>
@@ -144,6 +151,15 @@ export default function App() {
         onSelect={board.setDay}
       />
 
+      <MoveDayPopover
+        anchor={picking?.anchor ?? null}
+        value={board.day}
+        today={board.today}
+        markedDays={board.markedDays}
+        onSelect={(day) => picking && board.moveTaskToDay(picking.id, day)}
+        onClose={closePicker}
+      />
+
       <ColumnSettings
         open={panel === "columns"}
         onClose={closePanel}
@@ -156,7 +172,7 @@ export default function App() {
         onDelete={board.deleteColumn}
       />
 
-      <UndoToast deleted={board.lastDeleted} onUndo={board.undoDelete} onDismiss={board.dismissUndo} />
+      <UndoToast action={board.lastAction} today={board.today} onUndo={board.undo} onDismiss={board.dismissUndo} />
     </GlassWindow>
   );
 }

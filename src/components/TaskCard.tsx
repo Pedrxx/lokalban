@@ -3,7 +3,7 @@ import { Draggable } from "@hello-pangea/dnd";
 import type { Task } from "../types";
 import { cn } from "../lib/cn";
 import { IconButton } from "./IconButton";
-import { PencilIcon, TrashIcon } from "./icons";
+import { CalendarIcon, PencilIcon, TrashIcon } from "./icons";
 import { TaskEditor } from "./TaskEditor";
 
 type Props = {
@@ -12,13 +12,15 @@ type Props = {
   done: boolean;
   onUpdate: (id: string, title: string) => void;
   onDelete: (id: string) => void;
+  /** abre o mini calendario ancorado no botao clicado */
+  onPickDay: (id: string, anchor: DOMRect) => void;
 };
 
 /** Superficie de vidro compartilhada pelos cards e pelo campo de nova tarefa */
 export const cardSurface =
   "glass-edge rounded-card bg-white/75 shadow-[0_1px_2px_rgb(0_0_0/0.06)] dark:bg-white/[0.07]";
 
-export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, onDelete }: Props) {
+export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, onDelete, onPickDay }: Props) {
   const [editing, setEditing] = useState(false);
 
   return (
@@ -75,6 +77,12 @@ export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, on
                   >
                     <IconButton label="Editar" onClick={() => setEditing(true)}>
                       <PencilIcon width={13} height={13} />
+                    </IconButton>
+                    <IconButton
+                      label="Mover para outro dia"
+                      onClick={(e) => onPickDay(task.id, e.currentTarget.getBoundingClientRect())}
+                    >
+                      <CalendarIcon width={13} height={13} />
                     </IconButton>
                     <IconButton label="Excluir" tone="danger" onClick={() => onDelete(task.id)}>
                       <TrashIcon width={13} height={13} />

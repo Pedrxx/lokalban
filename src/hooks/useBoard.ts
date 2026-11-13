@@ -57,14 +57,20 @@ function parseBoard(raw: RawBoard): BoardState {
   return withDefaults(DEFAULT_COLUMNS, {});
 }
 
-export type DeletedTask = { task: Task; column: ColumnId; index: number };
+/**
+ * Ultima acao que o aviso permite desfazer. Guarda a tarefa como era antes,
+ * com a coluna e a posicao, para devolver ao mesmo lugar.
+ */
+export type UndoAction = { task: Task; column: ColumnId; index: number } & (
+  { kind: "delete" } | { kind: "move"; to: DayKey }
+);
 
 export function useBoard() {
   const [state, setState] = useState<BoardState>(() => withDefaults(DEFAULT_COLUMNS, {}));
   /** so libera a tela (e o salvamento) depois de ler o arquivo */
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [lastDeleted, setLastDeleted] = useState<DeletedTask | null>(null);
+  const [lastAction, setLastAction] = useState<UndoAction | null>(null);
 
   // Dia exibido no quadro. Sempre abre em hoje e acompanha a virada do dia
   const today = useToday();
@@ -80,8 +86,8 @@ export function useBoard() {
   stateRef.current = state;
   const dayRef = useRef(day);
   dayRef.current = day;
-  const lastDeletedRef = useRef(lastDeleted);
-  lastDeletedRef.current = lastDeleted;
+  const lastActionRef = useRef(lastAction);
+  lastActionRef.current = lastAction;
 
   // Carrega uma vez ao abrir
   useEffect(() => {
@@ -133,29 +139,53 @@ export function useBoard() {
     for (const [column, list] of Object.entries(stateRef.current.tasks)) {
       const index = list.findIndex((t) => t.id === id);
       if (index >= 0) {
-        setLastDeleted({ task: list[index], column, index });
+        setLastAction({ kind: "delete", task: list[index], column, index });
         setState((s) => ({ ...s, tasks: { ...s.tasks, [column]: s.tasks[column].filter((t) => t.id !== id) } }));
         return;
       }
     }
   }, []);
 
-  const undoDelete = useCallback(() => {
-    const deleted = lastDeletedRef.current;
-    if (!deleted) return;
-    const { task, column, index } = deleted;
-    setState((s) => {
-      const target = s.tasks[column];
-      // coluna excluida nesse meio tempo, ou tarefa ja restaurada
-      if (!target || Object.values(s.tasks).some((l) => l.some((t) => t.id === task.id))) return s;
-      const list = [...target];
-      list.splice(Math.min(index, list.length), 0, task);
-      return { ...s, tasks: { ...s.tasks, [column]: list } };
-    });
-    setLastDeleted(null);
+  /** Leva a tarefa para outro dia, no fim da lista daquele dia (mesma coluna) */
+  const moveTaskToDay = useCallback((id: string, date: DayKey) => {
+    for (const [column, list] of Object.entries(stateRef.current.tasks)) {
+      const index = list.findIndex((t) => t.id === id);
+      if (index < 0) continue;
+      const task = list[index];
+      if (task.date === date) return;
+      setLastAction({ kind: "move", task, column, index, to: date });
+      setState((s) => {
+        const current = s.tasks[column]?.find((t) => t.id === id);
+        if (!current) return s;
+        const rest = s.tasks[column].filter((t) => t.id !== id);
+        return { ...s, tasks: { ...s.tasks, [column]: [...rest, { ...current, date }] } };
+      });
+      return;
+    }
   }, []);
 
-  const dismissUndo = useCallback(() => setLastDeleted(null), []);
+  /** Devolve a tarefa ao dia, coluna e posicao de antes da ultima acao */
+  const undo = useCallback(() => {
+    const action = lastActionRef.current;
+    if (!action) return;
+    const { task, column, index } = action;
+    setState((s) => {
+      // coluna excluida nesse meio tempo
+      if (!s.tasks[column]) return s;
+      const current = Object.values(s.tasks)
+        .flat()
+        .find((t) => t.id === task.id);
+      // excluida: volta como era; movida: mantem edicoes feitas depois, so volta o dia
+      const restored = current ? { ...current, date: task.date } : task;
+      const tasks: BoardState["tasks"] = {};
+      for (const [col, list] of Object.entries(s.tasks)) tasks[col] = list.filter((t) => t.id !== task.id);
+      tasks[column].splice(Math.min(index, tasks[column].length), 0, restored);
+      return { ...s, tasks };
+    });
+    setLastAction(null);
+  }, []);
+
+  const dismissUndo = useCallback(() => setLastAction(null), []);
 
   /**
    * Handler do onDragEnd do DragDropContext. Os indices do arrasto sao da
@@ -257,8 +287,9 @@ export function useBoard() {
     updateTask,
     deleteTask,
     moveTask,
-    lastDeleted,
-    undoDelete,
+    moveTaskToDay,
+    lastAction,
+    undo,
     dismissUndo,
     addColumn,
     renameColumn,

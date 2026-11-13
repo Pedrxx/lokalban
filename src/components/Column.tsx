@@ -14,9 +14,20 @@ type Props = {
   onAdd: (title: string) => void;
   onUpdate: (id: string, title: string) => void;
   onDelete: (id: string) => void;
+  onPickDay: (id: string, anchor: DOMRect) => void;
 };
 
-export function Column({ column, tasks, composing, onStartCompose, onEndCompose, onAdd, onUpdate, onDelete }: Props) {
+export function Column({
+  column,
+  tasks,
+  composing,
+  onStartCompose,
+  onEndCompose,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onPickDay,
+}: Props) {
   return (
     <section className="flex min-h-0 flex-col rounded-xl bg-(--panel)">
       <header className="flex items-center gap-2 px-3 pt-3 pb-2">
@@ -48,6 +59,7 @@ export function Column({ column, tasks, composing, onStartCompose, onEndCompose,
                 done={!!column.done}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
+                onPickDay={onPickDay}
               />
             ))}
             {provided.placeholder}
