@@ -4,10 +4,10 @@ import { cn } from "../lib/cn";
 type Props = {
   focused: boolean;
   collapsed: boolean;
-  pinnedOnTop: boolean;
+  maximized: boolean;
   onClose: () => void;
   onCollapse: () => void;
-  onTogglePin: () => void;
+  onToggleMaximize: () => void;
 };
 
 /**
@@ -15,7 +15,7 @@ type Props = {
  *  - janela sem foco => bolinhas cinza
  *  - passar o mouse no grupo => cores + simbolos aparecem
  */
-export function TrafficLights({ focused, collapsed, pinnedOnTop, onClose, onCollapse, onTogglePin }: Props) {
+export function TrafficLights({ focused, collapsed, maximized, onClose, onCollapse, onToggleMaximize }: Props) {
   return (
     <div className="group relative z-10 flex items-center gap-2">
       <Light
@@ -35,20 +35,26 @@ export function TrafficLights({ focused, collapsed, pinnedOnTop, onClose, onColl
         glyph={collapsed ? <path d="M2.5 4l2.5 2.5L7.5 4" /> : <path d="M2 5h6" />}
       />
       <Light
-        label={pinnedOnTop ? "Voltar para a area de trabalho" : "Fixar acima das janelas"}
+        label={maximized ? "Restaurar tamanho" : "Maximizar"}
         focused={focused}
         on="bg-[#28c840]"
         hover="group-hover:bg-[#28c840]"
-        onClick={onTogglePin}
+        onClick={onToggleMaximize}
         glyph={
-          pinnedOnTop ? (
-            <path d="M2.5 7.5l5-5M3.5 2.5h4v4" />
-          ) : (
-            <g fill="currentColor" stroke="none">
-              <path d="M2.2 2.2h3.6L2.2 5.8z" />
-              <path d="M7.8 7.8H4.2l3.6-3.6z" />
-            </g>
-          )
+          // setas do macOS: para fora (maximizar) e para dentro (restaurar)
+          <g fill="currentColor" stroke="none">
+            {maximized ? (
+              <>
+                <path d="M4.6 4.6H1.4l3.2-3.2z" />
+                <path d="M5.4 5.4h3.2L5.4 8.6z" />
+              </>
+            ) : (
+              <>
+                <path d="M2.2 2.2h3.6L2.2 5.8z" />
+                <path d="M7.8 7.8H4.2l3.6-3.6z" />
+              </>
+            )}
+          </g>
         }
       />
     </div>

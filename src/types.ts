@@ -62,9 +62,11 @@ export type Settings = {
   theme: ThemePref;
   /** escala do app (zoom): 0.9, 1, 1.1 ou 1.25 */
   scale: Scale;
+  /** janela fixada acima das outras (o padrao e ficar atras, como widget) */
+  pinnedOnTop: boolean;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1 };
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1, pinnedOnTop: false };
 
 export type BoardState = {
   columns: ColumnDef[];

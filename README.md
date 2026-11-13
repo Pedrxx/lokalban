@@ -31,7 +31,7 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 
 - 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas, fica atrás das outras janelas
 - 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
-- 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, fixar acima das janelas
+- 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, maximizar e voltar ao tamanho solto; o alfinete na barra fixa acima das janelas (e o app lembra)
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)
 - ⚙️ **Colunas configuráveis** — renomear, criar (até 5), escolher a cor (paleta do macOS), reordenar arrastando, marcar como "concluída", fixar em todos os dias ou deixar só num dia
@@ -89,7 +89,7 @@ src/                     Frontend (React + TypeScript + Tailwind v4)
 ├─ components/           GlassWindow, TitleBar, TrafficLights, Column, TaskCard, ...
 ├─ hooks/
 │  ├─ useBoard.ts        Estado do quadro: tarefas, colunas, migração de dados
-│  └─ useWindowControls  Recolher, fixar no topo, foco da janela
+│  └─ useWindowControls  Recolher, maximizar, fixar no topo, foco da janela
 ├─ lib/storage.ts        Lê/grava o board.json via comandos Rust (localStorage no navegador)
 └─ index.css             Design tokens (vidro, raios, easing)
 src-tauri/               Backend (Rust + Tauri 2)

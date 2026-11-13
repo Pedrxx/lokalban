@@ -7,7 +7,7 @@ import { ColumnSettings } from "./components/ColumnSettings";
 import { CalendarPopover } from "./components/CalendarPopover";
 import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
-import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
+import { CalendarIcon, GearIcon, PinIcon, PlusIcon } from "./components/icons";
 import { SettingsPopover } from "./components/SettingsPopover";
 import { UndoToast } from "./components/UndoToast";
 import { useWindowControls } from "./hooks/useWindowControls";
@@ -25,8 +25,8 @@ const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:te
 
 export default function App() {
   const board = useBoard();
-  const { theme, scale } = board.settings;
-  const win = useWindowControls(scale);
+  const { theme, scale, pinnedOnTop } = board.settings;
+  const win = useWindowControls({ scale, pinnedOnTop, onPinnedChange: board.setPinnedOnTop });
   useTheme(theme, board.ready);
 
   // escala do board.json (antes de ler, vale a copia aplicada no main.tsx)
@@ -87,15 +87,15 @@ export default function App() {
   }, [newTask]);
 
   return (
-    <GlassWindow>
+    <GlassWindow maximized={win.maximized}>
       <TitleBar
         title="LokalBan"
         focused={win.focused}
         collapsed={win.collapsed}
-        pinnedOnTop={win.pinnedOnTop}
+        maximized={win.maximized}
         onClose={win.close}
         onCollapse={win.toggleCollapse}
-        onTogglePin={win.togglePin}
+        onToggleMaximize={win.toggleMaximize}
         actions={
           <>
             {board.day !== board.today && (
@@ -133,6 +133,13 @@ export default function App() {
               className={cn(panel === "settings" && activeButton)}
             >
               <GearIcon />
+            </IconButton>
+            <IconButton
+              label={pinnedOnTop ? "Desafixar (volta para trás das janelas)" : "Fixar acima das janelas"}
+              onClick={win.togglePin}
+              className={cn(pinnedOnTop && "text-sky-500! dark:text-sky-400!")}
+            >
+              <PinIcon width={13} height={13} />
             </IconButton>
           </>
         }
