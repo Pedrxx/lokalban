@@ -1,7 +1,9 @@
 import { COLOR_KEYS, COLOR_NAMES, COLUMN_COLORS, type ColumnColor } from "../types";
 import { cn } from "../lib/cn";
+import { popoverMotion } from "../lib/motion";
 
 type Props = {
+  open: boolean;
   value: ColumnColor;
   onSelect: (color: ColumnColor) => void;
   className?: string;
@@ -11,16 +13,17 @@ type Props = {
  * Popover pequeno com a paleta de destaque do macOS. A cor escolhida ganha
  * o pontinho branco no centro, como em Ajustes > Aparencia
  */
-export function ColorPicker({ value, onSelect, className }: Props) {
+export function ColorPicker({ open, value, onSelect, className }: Props) {
   return (
     <div
       role="radiogroup"
       aria-label="Cor da coluna"
       className={cn(
-        "flex gap-2 rounded-xl p-2.5",
+        "gap-2 rounded-xl p-2.5",
         "glass-edge bg-white/95 shadow-[0_10px_30px_rgb(0_0_0/0.22)] dark:bg-[#323236]/95",
-        "transition-[opacity,scale,translate] duration-200 ease-mac",
-        "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
+        // fechado fica display:none (popoverMotion); o flex so quando aberto
+        open && "flex",
+        popoverMotion(open),
         className,
       )}
     >

@@ -3,6 +3,7 @@ import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { COLUMN_COLORS, MAX_COLUMNS, type ColumnColor, type ColumnDef, type ColumnId } from "../types";
 import { cn } from "../lib/cn";
 import { formatDayShort, type DayKey } from "../lib/date";
+import { popoverMotion } from "../lib/motion";
 import { ColorPicker } from "./ColorPicker";
 import { IconButton } from "./IconButton";
 import { CheckIcon, GripIcon, PinIcon, PlusIcon, TrashIcon } from "./icons";
@@ -64,8 +65,6 @@ export function ColumnSettings({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose, coloring]);
 
-  if (!open) return null;
-
   const atMax = columns.length >= MAX_COLUMNS;
 
   const requestDelete = (col: ColumnDef) => {
@@ -81,16 +80,16 @@ export function ColumnSettings({
   return (
     <>
       {/* clique fora fecha */}
-      <div className="absolute inset-0 z-20" onMouseDown={onClose} />
+      {open && <div className="absolute inset-0 z-20" onMouseDown={onClose} />}
 
+      {/* fica montado para animar tambem ao fechar */}
       <div
         role="dialog"
         aria-label="Colunas"
         className={cn(
           "absolute top-11 right-3 z-30 w-96 origin-top-right rounded-xl p-3",
           "glass-edge bg-white/90 shadow-[0_18px_48px_rgb(0_0_0/0.25)] dark:bg-[#2a2a2d]/95",
-          "transition-[opacity,scale,translate] duration-200 ease-mac",
-          "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
+          popoverMotion(open),
         )}
       >
         {/* com o seletor de cor aberto, clique em outro ponto do painel fecha so ele */}
@@ -149,16 +148,15 @@ export function ColumnSettings({
                                   COLUMN_COLORS[col.color],
                                 )}
                               />
-                              {coloring === col.id && (
-                                <ColorPicker
-                                  value={col.color}
-                                  onSelect={(color) => {
-                                    onRecolor(col.id, color);
-                                    setColoring(null);
-                                  }}
-                                  className="absolute top-full -left-2.5 z-20 mt-2 origin-top-left"
-                                />
-                              )}
+                              <ColorPicker
+                                open={coloring === col.id}
+                                value={col.color}
+                                onSelect={(color) => {
+                                  onRecolor(col.id, color);
+                                  setColoring(null);
+                                }}
+                                className="absolute top-full -left-2.5 z-20 mt-2 origin-top-left"
+                              />
                             </div>
 
                             <input

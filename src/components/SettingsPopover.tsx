@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { ThemePref } from "../lib/theme";
 import { SCALES, type Scale } from "../lib/scale";
 import { cn } from "../lib/cn";
+import { popoverMotion } from "../lib/motion";
 import { Switch } from "./Switch";
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
@@ -54,21 +55,19 @@ export function SettingsPopover({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
     <>
       {/* clique fora fecha */}
-      <div className="absolute inset-0 z-20" onMouseDown={onClose} />
+      {open && <div className="absolute inset-0 z-20" onMouseDown={onClose} />}
 
+      {/* fica montado para animar tambem ao fechar */}
       <div
         role="dialog"
         aria-label="Configurações"
         className={cn(
           "absolute top-11 right-3 z-30 w-80 origin-top-right rounded-xl p-3",
           "glass-edge bg-white/90 shadow-[0_18px_48px_rgb(0_0_0/0.25)] dark:bg-[#2a2a2d]/95",
-          "transition-[opacity,scale,translate] duration-200 ease-mac",
-          "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
+          popoverMotion(open),
         )}
       >
         <h3 className="px-1 pb-2 text-[12px] font-semibold text-black/50 dark:text-white/50">Configurações</h3>

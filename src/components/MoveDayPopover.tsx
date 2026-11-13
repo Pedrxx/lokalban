@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { DayKey } from "../lib/date";
 import { cn } from "../lib/cn";
+import { popoverMotion } from "../lib/motion";
 import { Calendar } from "./Calendar";
 
 const GAP = 6;
@@ -25,7 +26,11 @@ type Props = {
  */
 export function MoveDayPopover({ anchor, value, today, markedDays, minDay, onSelect, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const open = !!anchor;
+  // fechando, fica onde estava e com os mesmos dias desabilitados ate sumir
   const [pos, setPos] = useState<{ top: number; left: number; above: boolean } | null>(null);
+  const shownMinDay = useRef(minDay);
+  if (open) shownMinDay.current = minDay;
 
   useEffect(() => {
     if (!anchor) return;
@@ -38,7 +43,7 @@ export function MoveDayPopover({ anchor, value, today, markedDays, minDay, onSel
 
   // posiciona antes de pintar, ja sabendo o tamanho do popover
   useLayoutEffect(() => {
-    if (!anchor || !ref.current) return setPos(null);
+    if (!anchor || !ref.current) return;
     const { offsetWidth: w, offsetHeight: h } = ref.current;
     const left = Math.min(Math.max(anchor.right - w, MARGIN), window.innerWidth - w - MARGIN);
     const above = anchor.bottom + GAP + h > window.innerHeight - MARGIN;
@@ -46,13 +51,12 @@ export function MoveDayPopover({ anchor, value, today, markedDays, minDay, onSel
     setPos({ top, left, above });
   }, [anchor]);
 
-  if (!anchor) return null;
-
   return (
     <>
       {/* clique fora fecha */}
-      <div className="fixed inset-0 z-20" onMouseDown={onClose} />
+      {open && <div className="fixed inset-0 z-20" onMouseDown={onClose} />}
 
+      {/* fica montado para animar tambem ao fechar */}
       <div
         ref={ref}
         role="dialog"
@@ -62,15 +66,14 @@ export function MoveDayPopover({ anchor, value, today, markedDays, minDay, onSel
           "fixed z-30 w-64 rounded-xl p-3",
           pos?.above ? "origin-bottom-right" : "origin-top-right",
           "glass-edge bg-white/90 shadow-[0_18px_48px_rgb(0_0_0/0.25)] dark:bg-[#2a2a2d]/95",
-          "transition-[opacity,scale,translate] duration-200 ease-mac",
-          "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
+          popoverMotion(open),
         )}
       >
         <Calendar
           value={value}
           today={today}
           marked={markedDays}
-          minDay={minDay}
+          minDay={shownMinDay.current}
           onSelect={(day) => {
             onSelect(day);
             onClose();
