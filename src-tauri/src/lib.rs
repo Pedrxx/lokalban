@@ -260,7 +260,11 @@ pub fn run() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![load_board, save_board, set_close_to_tray])
+        .invoke_handler(tauri::generate_handler![
+            load_board,
+            save_board,
+            set_close_to_tray
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
