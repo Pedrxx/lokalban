@@ -14,6 +14,10 @@ const CACHE_KEY = "lokalban:theme";
 
 const darkQuery = () => window.matchMedia("(prefers-color-scheme: dark)");
 
+/** Quanto tempo a classe theme-transition fica no <html> (a transicao e de 250ms) */
+const THEME_FADE_MS = 300;
+let themeFadeTimer: number | undefined;
+
 export function isThemePref(value: unknown): value is ThemePref {
   return THEME_PREFS.includes(value as ThemePref);
 }
@@ -33,7 +37,16 @@ export function readCachedTheme(): ThemePref {
  */
 export function applyTheme(pref: ThemePref) {
   const dark = pref === "dark" || (pref === "auto" && darkQuery().matches);
-  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  const root = document.documentElement;
+  const next = dark ? "dark" : "light";
+  // troca de verdade (nao a primeira aplicacao, ao abrir): as cores fazem uma
+  // transicao curta enquanto a classe estiver no <html> (ver index.css)
+  if (root.dataset.theme && root.dataset.theme !== next) {
+    root.classList.add("theme-transition");
+    window.clearTimeout(themeFadeTimer);
+    themeFadeTimer = window.setTimeout(() => root.classList.remove("theme-transition"), THEME_FADE_MS);
+  }
+  root.dataset.theme = next;
   try {
     localStorage.setItem(CACHE_KEY, pref);
   } catch {

@@ -159,6 +159,22 @@ html.browser-preview #root::before {
   backdrop-filter: blur(40px) saturate(180%);
 }
 
+/* Troca de tema suave: so enquanto o <html> tem a classe theme-transition
+   (src/lib/theme.ts), as cores fazem uma transicao curta. Quem tem
+   transicao propria que precisa continuar (ex.: o destaque do controle
+   segmentado) marca data-own-transition */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transition,
+  html.theme-transition *:not([data-own-transition]),
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color !important;
+    transition-duration: 250ms !important;
+    transition-timing-function: var(--ease-mac) !important;
+    transition-delay: 0s !important;
+  }
+}
+
 /* Movimento reduzido (Windows: Acessibilidade > Efeitos visuais > Efeitos de
    animacao desligado): tudo fica instantaneo. 0.01ms em vez de 0 para os
    eventos de fim de transicao continuarem disparando; !important para

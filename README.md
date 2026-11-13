@@ -31,6 +31,8 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 
 - 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas (dá para mostrar nas Configurações), fica atrás das outras janelas
 - 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
+- ✨ **Animações no estilo macOS** — popovers abrindo e fechando, tarefas entrando e saindo, troca de dia, de mês e de tema;
+  respeitam o "Efeitos de animação" do Windows (com ele desligado, tudo fica instantâneo)
 - 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, maximizar e voltar ao tamanho solto; o alfinete na barra fixa acima das janelas (e o app lembra)
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)
