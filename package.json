@@ -1,7 +1,7 @@
 {
   "name": "lokalban",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Kanban de mesa para Windows com estética macOS (Tauri + React)",
   "license": "MIT",
   "type": "module",
