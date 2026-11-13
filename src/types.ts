@@ -62,9 +62,22 @@ export type Settings = {
   theme: ThemePref;
   /** escala do app (zoom): 0.9, 1, 1.1 ou 1.25 */
   scale: Scale;
+  /** janela fixada acima das outras (o padrao e ficar atras, como widget) */
+  pinnedOnTop: boolean;
+  /** botao vermelho / Alt+F4: true esconde na bandeja, false sai do app */
+  closeToTray: boolean;
+  /** icone na barra de tarefas do Windows (o padrao e ficar so na bandeja) */
+  showInTaskbar: boolean;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1 };
+export const DEFAULT_SETTINGS: Settings = {
+  pendingToToday: true,
+  theme: "auto",
+  scale: 1,
+  pinnedOnTop: false,
+  closeToTray: true,
+  showInTaskbar: false,
+};
 
 export type BoardState = {
   columns: ColumnDef[];

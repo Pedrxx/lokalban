@@ -1,4 +1,8 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use tauri::{
     AppHandle, Manager, WindowEvent,
@@ -58,18 +62,45 @@ fn save_board(app: AppHandle, json: String) -> Result<(), String> {
 
 // ------------------------------------------------------------------ janela
 
+/// Ao fechar (botao vermelho / Alt+F4): true esconde na bandeja, false sai.
+/// Comeca escondendo; o app manda a configuracao salva assim que le o board.json
+struct CloseToTray(AtomicBool);
+
+#[tauri::command]
+fn set_close_to_tray(state: tauri::State<CloseToTray>, enabled: bool) {
+    state.0.store(enabled, Ordering::Relaxed);
+}
+
+/// Item "Mostrar o LokalBan" da bandeja: o check acompanha a janela visivel
+struct ShowItem(CheckMenuItem<tauri::Wry>);
+
+/// Atualiza o check do item da bandeja (todo mostrar/esconder passa por aqui)
+fn mark_shown(app: &AppHandle, shown: bool) {
+    if let Some(item) = app.try_state::<ShowItem>() {
+        let _ = item.0.set_checked(shown);
+    }
+}
+
 fn show_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window(MAIN) {
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();
+        mark_shown(app, true);
+    }
+}
+
+fn hide_main(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window(MAIN) {
+        let _ = w.hide();
+        mark_shown(app, false);
     }
 }
 
 fn toggle_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window(MAIN) {
         if w.is_visible().unwrap_or(false) {
-            let _ = w.hide();
+            hide_main(app);
         } else {
             show_main(app);
         }
@@ -86,7 +117,16 @@ fn quit(app: &AppHandle) {
 fn build_tray(app: &tauri::App) -> tauri::Result<()> {
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
 
-    let toggle = MenuItem::with_id(app, "toggle", "Mostrar / esconder", true, None::<&str>)?;
+    // marcado = janela visivel (a janela nasce escondida; o show_main do setup marca)
+    let toggle = CheckMenuItem::with_id(
+        app,
+        "toggle",
+        "Mostrar o LokalBan",
+        true,
+        false,
+        None::<&str>,
+    )?;
+    app.manage(ShowItem(toggle.clone()));
     let autostart = CheckMenuItem::with_id(
         app,
         "autostart",
@@ -203,17 +243,28 @@ pub fn run() {
             show_main(app.handle());
             Ok(())
         })
+        .manage(CloseToTray(AtomicBool::new(true)))
         .on_window_event(|window, event| {
-            // botao vermelho / Alt+F4: esconde em vez de fechar (volta pela bandeja)
+            // botao vermelho / Alt+F4: esconde (volta pela bandeja) ou sai do app,
+            // conforme a configuracao "Ao fechar"
             if let WindowEvent::CloseRequested { api, .. } = event
                 && window.label() == MAIN
             {
                 api.prevent_close();
-                let _ = window.app_handle().save_window_state(window_state_flags());
-                let _ = window.hide();
+                let app = window.app_handle();
+                if app.state::<CloseToTray>().0.load(Ordering::Relaxed) {
+                    let _ = app.save_window_state(window_state_flags());
+                    hide_main(app);
+                } else {
+                    quit(app);
+                }
             }
         })
-        .invoke_handler(tauri::generate_handler![load_board, save_board])
+        .invoke_handler(tauri::generate_handler![
+            load_board,
+            save_board,
+            set_close_to_tray
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

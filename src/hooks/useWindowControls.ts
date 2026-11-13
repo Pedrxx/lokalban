@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 
@@ -13,17 +13,61 @@ const inTauri = isTauri();
  * Controles da janela-widget:
  *  - vermelho: esconde a janela (o Rust intercepta o fechamento; volta pela
  *              bandeja e "Sair" fica no menu do icone perto do relogio)
+ *              ou sai do app, conforme a configuracao "Ao fechar"
  *  - amarelo:  recolhe a janela ate a barra de titulo (minimizar nao serve:
  *              sem icone na barra de tarefas nao haveria como restaurar)
- *  - verde:    alterna entre "na area de trabalho" e "acima das janelas"
+ *  - verde:    maximiza e volta ao tamanho solto, como no macOS
+ *  - alfinete: alterna entre "na area de trabalho" e "acima das janelas"
+ *              (o estado fica salvo nas configuracoes)
  */
-export function useWindowControls(scale = 1) {
+export function useWindowControls({
+  scale = 1,
+  pinnedOnTop = false,
+  closeToTray = true,
+  showInTaskbar = false,
+  onPinnedChange,
+}: {
+  scale?: number;
+  /** acima das janelas (salvo nas configuracoes) */
+  pinnedOnTop?: boolean;
+  /** vermelho / Alt+F4 esconde na bandeja (true) ou sai do app (false) */
+  closeToTray?: boolean;
+  /** icone na barra de tarefas (o tauri.conf.json comeca sem) */
+  showInTaskbar?: boolean;
+  onPinnedChange: (pinned: boolean) => void;
+}) {
   const [focused, setFocused] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
-  const [pinnedOnTop, setPinnedOnTop] = useState(false);
+  const [maximized, setMaximized] = useState(false);
   const expandedHeight = useRef(600);
   // recolhida, a janela fica com a altura da barra de titulo, que acompanha a escala
   const collapsedHeight = Math.round(TITLEBAR_HEIGHT * scale);
+
+  // camada da janela: segue o estado salvo (ao abrir, ja carregado do board.json)
+  useEffect(() => {
+    if (!inTauri) return;
+    const win = getCurrentWindow();
+    // A ordem importa: desligar um modo antes de ligar o outro
+    const apply = pinnedOnTop
+      ? win.setAlwaysOnBottom(false).then(() => win.setAlwaysOnTop(true))
+      : win.setAlwaysOnTop(false).then(() => win.setAlwaysOnBottom(true));
+    apply.catch((err) => console.error("Falha ao alterar a camada da janela:", err));
+  }, [pinnedOnTop]);
+
+  // quem decide o fechamento e o Rust (assim o Alt+F4 tambem segue a opcao)
+  useEffect(() => {
+    if (!inTauri) return;
+    invoke("set_close_to_tray", { enabled: closeToTray }).catch((err) =>
+      console.error("Falha ao configurar o fechamento:", err),
+    );
+  }, [closeToTray]);
+
+  useEffect(() => {
+    if (!inTauri) return;
+    getCurrentWindow()
+      .setSkipTaskbar(!showInTaskbar)
+      .catch((err) => console.error("Falha ao alterar o icone na barra de tarefas:", err));
+  }, [showInTaskbar]);
 
   // trocar a escala com a janela recolhida ajusta a altura dela
   useEffect(() => {
@@ -36,18 +80,23 @@ export function useWindowControls(scale = 1) {
     })().catch((err) => console.error("Falha ao ajustar a janela recolhida:", err));
   }, [collapsed, collapsedHeight]);
 
+  // foco (semaforo cinza sem foco) e maximizada (tambem muda com duplo clique na barra)
   useEffect(() => {
     if (!inTauri) return;
     const win = getCurrentWindow();
     let disposed = false;
-    let unlisten: (() => void) | undefined;
+    const unlisten: (() => void)[] = [];
+    const keep = (fn: () => void) => (disposed ? fn() : unlisten.push(fn));
+    const syncMaximized = () => win.isMaximized().then((m) => !disposed && setMaximized(m));
 
     win.isFocused().then((f) => !disposed && setFocused(f));
-    win.onFocusChanged(({ payload }) => setFocused(payload)).then((fn) => (disposed ? fn() : (unlisten = fn)));
+    syncMaximized();
+    win.onFocusChanged(({ payload }) => setFocused(payload)).then(keep);
+    win.onResized(syncMaximized).then(keep);
 
     return () => {
       disposed = true;
-      unlisten?.();
+      unlisten.forEach((fn) => fn());
     };
   }, []);
 
@@ -63,12 +112,15 @@ export function useWindowControls(scale = 1) {
     }
     const win = getCurrentWindow();
     try {
-      const size = (await win.innerSize()).toLogical(await win.scaleFactor());
       if (!collapsed) {
+        // maximizada nao recolhe: volta antes ao tamanho solto
+        if (await win.isMaximized()) await win.toggleMaximize();
+        const size = (await win.innerSize()).toLogical(await win.scaleFactor());
         expandedHeight.current = size.height;
         await win.setMinSize(new LogicalSize(MIN_WIDTH, collapsedHeight));
         await win.setSize(new LogicalSize(size.width, collapsedHeight));
       } else {
+        const size = (await win.innerSize()).toLogical(await win.scaleFactor());
         await win.setSize(new LogicalSize(size.width, expandedHeight.current));
         await win.setMinSize(new LogicalSize(MIN_WIDTH, MIN_HEIGHT));
       }
@@ -78,26 +130,18 @@ export function useWindowControls(scale = 1) {
     }
   }, [collapsed, collapsedHeight]);
 
-  const togglePin = useCallback(async () => {
-    const next = !pinnedOnTop;
-    if (inTauri) {
-      const win = getCurrentWindow();
-      try {
-        // A ordem importa: desligar um modo antes de ligar o outro
-        if (next) {
-          await win.setAlwaysOnBottom(false);
-          await win.setAlwaysOnTop(true);
-        } else {
-          await win.setAlwaysOnTop(false);
-          await win.setAlwaysOnBottom(true);
-        }
-      } catch (err) {
-        console.error("Falha ao alterar a camada da janela:", err);
-        return;
-      }
+  const toggleMaximize = useCallback(async () => {
+    if (!inTauri) return;
+    try {
+      // recolhida, expande antes de maximizar
+      if (collapsed) await toggleCollapse();
+      await getCurrentWindow().toggleMaximize();
+    } catch (err) {
+      console.error("Falha ao maximizar a janela:", err);
     }
-    setPinnedOnTop(next);
-  }, [pinnedOnTop]);
+  }, [collapsed, toggleCollapse]);
 
-  return { focused, collapsed, pinnedOnTop, close, toggleCollapse, togglePin };
+  const togglePin = useCallback(() => onPinnedChange(!pinnedOnTop), [onPinnedChange, pinnedOnTop]);
+
+  return { focused, collapsed, maximized, close, toggleCollapse, toggleMaximize, togglePin };
 }

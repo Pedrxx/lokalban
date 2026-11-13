@@ -29,15 +29,18 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 
 ## Funcionalidades
 
-- 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas, fica atrás das outras janelas
+- 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas (dá para mostrar nas Configurações), fica atrás das outras janelas
 - 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
-- 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, fixar acima das janelas
+- 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, maximizar e voltar ao tamanho solto; o alfinete na barra fixa acima das janelas (e o app lembra)
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)
 - ⚙️ **Colunas configuráveis** — renomear, criar (até 5), escolher a cor (paleta do macOS), reordenar arrastando, marcar como "concluída", fixar em todos os dias ou deixar só num dia
-- 📌 **Ícone na bandeja** — mostrar/esconder, iniciar com o Windows, abrir a pasta dos dados, sair
+- 📌 **Ícone na bandeja** — mostrar/esconder (com ✓ quando a janela está aberta), iniciar com o Windows, abrir a pasta dos dados, sair
 - 💾 **Seus dados num JSON** — `%APPDATA%\com.lokalban.widget\board.json`, com backup automático da versão anterior
-- 📍 Lembra posição e tamanho da janela · 🔍 escala de 90% a 125% nas Configurações · ⌨️ `Ctrl+N` cria tarefa · uma única instância
+- ⌨️ **Atalhos com `Alt`** — segure `Alt` para ver a tecla de cada botão: `N` nova tarefa, `C` colunas,
+  `D` calendário, `←`/`→` dia anterior/próximo, `H` hoje, `,` configurações, `F` fixar, `R` recolher,
+  `E` fechar (como o botão vermelho). `Ctrl+N` também cria tarefa
+- 📍 Lembra posição e tamanho da janela · 🔍 escala de 90% a 125% nas Configurações · uma única instância
 
 ## Instalação
 
@@ -89,7 +92,7 @@ src/                     Frontend (React + TypeScript + Tailwind v4)
 ├─ components/           GlassWindow, TitleBar, TrafficLights, Column, TaskCard, ...
 ├─ hooks/
 │  ├─ useBoard.ts        Estado do quadro: tarefas, colunas, migração de dados
-│  └─ useWindowControls  Recolher, fixar no topo, foco da janela
+│  └─ useWindowControls  Recolher, maximizar, fixar no topo, foco da janela
 ├─ lib/storage.ts        Lê/grava o board.json via comandos Rust (localStorage no navegador)
 └─ index.css             Design tokens (vidro, raios, easing)
 src-tauri/               Backend (Rust + Tauri 2)
@@ -106,6 +109,7 @@ src-tauri/               Backend (Rust + Tauri 2)
 - **Botão amarelo recolhe em vez de minimizar**: sem ícone na barra de tarefas, uma janela
   minimizada não teria como voltar.
 - **Botão vermelho esconde**: o app segue vivo na bandeja, como no macOS. "Sair" fica no menu do ícone.
+  Em Configurações → "Ao fechar" dá para trocar por sair do app (vale também para o `Alt+F4`).
 - **Dados em JSON legível**: fácil de fazer backup, versionar ou sincronizar por conta própria.
 
 Discorda de alguma? Ótimo — abra uma [Discussion](https://github.com/Pedrxx/lokalban/discussions).

@@ -40,6 +40,9 @@ function parseSettings(raw: unknown): Settings {
     pendingToToday: typeof s.pendingToToday === "boolean" ? s.pendingToToday : DEFAULT_SETTINGS.pendingToToday,
     theme: isThemePref(s.theme) ? s.theme : DEFAULT_SETTINGS.theme,
     scale: isScale(s.scale) ? s.scale : DEFAULT_SETTINGS.scale,
+    pinnedOnTop: typeof s.pinnedOnTop === "boolean" ? s.pinnedOnTop : DEFAULT_SETTINGS.pinnedOnTop,
+    closeToTray: typeof s.closeToTray === "boolean" ? s.closeToTray : DEFAULT_SETTINGS.closeToTray,
+    showInTaskbar: typeof s.showInTaskbar === "boolean" ? s.showInTaskbar : DEFAULT_SETTINGS.showInTaskbar,
   };
 }
 
@@ -403,6 +406,18 @@ export function useBoard() {
     setState((s) => ({ ...s, settings: { ...s.settings, scale } }));
   }, []);
 
+  const setPinnedOnTop = useCallback((pinnedOnTop: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, pinnedOnTop } }));
+  }, []);
+
+  const setCloseToTray = useCallback((closeToTray: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, closeToTray } }));
+  }, []);
+
+  const setShowInTaskbar = useCallback((showInTaskbar: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, showInTaskbar } }));
+  }, []);
+
   // ---------------------------------------------------------------- dias
 
   /** Tarefas do dia exibido, por coluna */
@@ -444,6 +459,9 @@ export function useBoard() {
     setPendingToToday,
     setTheme,
     setScale,
+    setPinnedOnTop,
+    setCloseToTray,
+    setShowInTaskbar,
     columns: dayColumns,
     lockedColumns,
     tasks: dayTasks,

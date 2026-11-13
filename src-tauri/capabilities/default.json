@@ -12,6 +12,8 @@
     "core:window:allow-set-min-size",
     "core:window:allow-set-always-on-top",
     "core:window:allow-set-always-on-bottom",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-set-skip-taskbar",
     "core:window:allow-set-theme",
     "core:webview:allow-set-webview-zoom"
   ]

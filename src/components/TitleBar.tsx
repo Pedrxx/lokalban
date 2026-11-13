@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { TrafficLights } from "./TrafficLights";
-import { PinIcon } from "./icons";
 import { TITLEBAR_HEIGHT } from "../hooks/useWindowControls";
 import { cn } from "../lib/cn";
 
@@ -8,10 +7,11 @@ type Props = {
   title: string;
   focused: boolean;
   collapsed: boolean;
-  pinnedOnTop: boolean;
+  maximized: boolean;
+  closeToTray: boolean;
   onClose: () => void;
   onCollapse: () => void;
-  onTogglePin: () => void;
+  onToggleMaximize: () => void;
   /** Acoes do lado direito (ex.: botao "+ Nova tarefa" na Etapa 3) */
   actions?: ReactNode;
 };
@@ -21,7 +21,17 @@ type Props = {
  * (data-tauri-drag-region). O titulo tem pointer-events-none para o clique
  * "atravessar" ate o header; botoes nao arrastam.
  */
-export function TitleBar({ title, focused, collapsed, pinnedOnTop, onClose, onCollapse, onTogglePin, actions }: Props) {
+export function TitleBar({
+  title,
+  focused,
+  collapsed,
+  maximized,
+  closeToTray,
+  onClose,
+  onCollapse,
+  onToggleMaximize,
+  actions,
+}: Props) {
   return (
     <header
       data-tauri-drag-region
@@ -31,10 +41,11 @@ export function TitleBar({ title, focused, collapsed, pinnedOnTop, onClose, onCo
       <TrafficLights
         focused={focused}
         collapsed={collapsed}
-        pinnedOnTop={pinnedOnTop}
+        maximized={maximized}
+        closeToTray={closeToTray}
         onClose={onClose}
         onCollapse={onCollapse}
-        onTogglePin={onTogglePin}
+        onToggleMaximize={onToggleMaximize}
       />
 
       <h1
@@ -46,18 +57,7 @@ export function TitleBar({ title, focused, collapsed, pinnedOnTop, onClose, onCo
         {title}
       </h1>
 
-      <div className="relative ml-auto flex items-center gap-1.5">
-        {pinnedOnTop && (
-          <span
-            title="Fixado acima das janelas"
-            className="flex items-center gap-1 rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/55 dark:bg-white/10 dark:text-white/60"
-          >
-            <PinIcon width={10} height={10} />
-            Fixado
-          </span>
-        )}
-        {actions}
-      </div>
+      <div className="relative ml-auto flex items-center gap-1.5">{actions}</div>
     </header>
   );
 }

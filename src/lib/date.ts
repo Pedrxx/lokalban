@@ -19,6 +19,12 @@ export function parseDay(key: DayKey): Date {
   return new Date(y, m - 1, d);
 }
 
+/** Dia N dias depois (ou antes, se negativo) */
+export function addDays(key: DayKey, days: number): DayKey {
+  const d = parseDay(key);
+  return dayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() + days));
+}
+
 /** "ter., 10 de nov." */
 export function formatDayShort(key: DayKey): string {
   return parseDay(key).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
