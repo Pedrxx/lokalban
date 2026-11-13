@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
+import { KeyTip } from "./KeyTip";
 
 type Props = {
   focused: boolean;
@@ -34,6 +35,7 @@ export function TrafficLights({
         on="bg-[#ff5f57]"
         hover="group-hover:bg-[#ff5f57]"
         onClick={onClose}
+        keyTip="E"
         glyph={<path d="M2.5 2.5l5 5M7.5 2.5l-5 5" />}
       />
       <Light
@@ -42,6 +44,7 @@ export function TrafficLights({
         on="bg-[#febc2e]"
         hover="group-hover:bg-[#febc2e]"
         onClick={onCollapse}
+        keyTip="R"
         glyph={collapsed ? <path d="M2.5 4l2.5 2.5L7.5 4" /> : <path d="M2 5h6" />}
       />
       <Light
@@ -80,9 +83,11 @@ type LightProps = {
   hover: string;
   glyph: ReactNode;
   onClick: () => void;
+  /** tecla do atalho com Alt */
+  keyTip?: string;
 };
 
-function Light({ label, focused, on, hover, glyph, onClick }: LightProps) {
+function Light({ label, focused, on, hover, glyph, onClick, keyTip }: LightProps) {
   return (
     <button
       type="button"
@@ -91,9 +96,10 @@ function Light({ label, focused, on, hover, glyph, onClick }: LightProps) {
       onClick={onClick}
       onDoubleClick={(e) => e.stopPropagation()}
       className={cn(
-        "grid size-3 place-items-center rounded-full",
+        "relative grid size-3 place-items-center rounded-full",
         "shadow-[inset_0_0_0_0.5px_rgb(0_0_0/0.18)]",
-        "transition-[background-color,filter,transform] duration-150 ease-mac",
+        // scale e propriedade propria no Tailwind v4 (nao transform)
+        "transition-[background-color,filter,scale] duration-150 ease-mac",
         "active:scale-90 active:brightness-75",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500",
         focused ? on : cn("bg-black/15 dark:bg-white/20", hover),
@@ -113,6 +119,7 @@ function Light({ label, focused, on, hover, glyph, onClick }: LightProps) {
       >
         {glyph}
       </svg>
+      <KeyTip keys={keyTip} />
     </button>
   );
 }

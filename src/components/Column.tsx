@@ -2,6 +2,7 @@ import { Draggable, Droppable } from "@hello-pangea/dnd";
 import { COLUMN_COLORS, type ColumnDef, type Task } from "../types";
 import { cn } from "../lib/cn";
 import { PlusIcon } from "./icons";
+import { KeyTip } from "./KeyTip";
 import { TaskCard, cardSurface } from "./TaskCard";
 import { TaskEditor } from "./TaskEditor";
 
@@ -118,6 +119,8 @@ export function Column({
             >
               <PlusIcon width={12} height={12} />
               Nova tarefa
+              {/* Alt+N cria na primeira coluna */}
+              {index === 0 && <KeyTip keys="N" placement="inline" />}
             </button>
           </section>
         </div>
