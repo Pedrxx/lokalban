@@ -11,6 +11,8 @@ type Props = {
   today: DayKey;
   /** dias que ganham um pontinho (tem tarefas) */
   marked?: Set<DayKey>;
+  /** dias antes deste ficam desabilitados */
+  minDay?: DayKey;
   onSelect: (day: DayKey) => void;
 };
 
@@ -19,7 +21,7 @@ type Props = {
  * hoje em vermelho, dia escolhido preenchido. Sempre 6 linhas, para o
  * popover nao mudar de altura ao trocar de mes.
  */
-export function Calendar({ value, today, marked, onSelect }: Props) {
+export function Calendar({ value, today, marked, minDay, onSelect }: Props) {
   const [view, setView] = useState(() => monthOf(value));
 
   // acompanha mudancas de fora (ex.: virada do dia)
@@ -77,12 +79,14 @@ export function Calendar({ value, today, marked, onSelect }: Props) {
           if (!key) return <span key={i} className="h-7" />;
           const selected = key === value;
           const isToday = key === today;
+          const disabled = !!minDay && key < minDay;
           return (
             <button
               key={key}
               type="button"
               aria-label={formatDayShort(key)}
               aria-pressed={selected}
+              disabled={disabled}
               onClick={() => onSelect(key)}
               className={cn(
                 "relative mx-auto grid size-7 place-items-center rounded-full text-[12px] tabular-nums",
@@ -90,10 +94,12 @@ export function Calendar({ value, today, marked, onSelect }: Props) {
                 "focus-visible:outline-2 focus-visible:outline-sky-500",
                 selected
                   ? cn("font-semibold text-white", isToday ? "bg-red-500" : "bg-sky-500")
-                  : cn(
-                      "hover:bg-black/[0.06] dark:hover:bg-white/10",
-                      isToday ? "font-semibold text-red-500 dark:text-red-400" : "text-black/75 dark:text-white/80",
-                    ),
+                  : disabled
+                    ? "text-black/20 dark:text-white/20"
+                    : cn(
+                        "hover:bg-black/[0.06] dark:hover:bg-white/10",
+                        isToday ? "font-semibold text-red-500 dark:text-red-400" : "text-black/75 dark:text-white/80",
+                      ),
               )}
             >
               {parseDay(key).getDate()}

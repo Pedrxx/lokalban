@@ -13,6 +13,8 @@ type Props = {
   value: DayKey;
   today: DayKey;
   markedDays: Set<DayKey>;
+  /** dias antes deste ficam desabilitados */
+  minDay?: DayKey;
   onSelect: (day: DayKey) => void;
   onClose: () => void;
 };
@@ -21,7 +23,7 @@ type Props = {
  * Mini calendario do card para levar a tarefa a outro dia. Abre abaixo do
  * botao (ou acima, se nao couber) e fecha ao escolher.
  */
-export function MoveDayPopover({ anchor, value, today, markedDays, onSelect, onClose }: Props) {
+export function MoveDayPopover({ anchor, value, today, markedDays, minDay, onSelect, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number; above: boolean } | null>(null);
 
@@ -68,6 +70,7 @@ export function MoveDayPopover({ anchor, value, today, markedDays, onSelect, onC
           value={value}
           today={today}
           marked={markedDays}
+          minDay={minDay}
           onSelect={(day) => {
             onSelect(day);
             onClose();

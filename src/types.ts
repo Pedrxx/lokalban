@@ -31,9 +31,18 @@ export type ColumnDef = {
   done?: boolean;
 };
 
+/** Preferencias salvas junto com o quadro (chave "settings" do board.json) */
+export type Settings = {
+  /** pendentes de dias passados vao para hoje */
+  pendingToToday: boolean;
+};
+
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true };
+
 export type BoardState = {
   columns: ColumnDef[];
   tasks: Record<ColumnId, Task[]>;
+  settings: Settings;
 };
 
 export const MAX_COLUMNS = 5;

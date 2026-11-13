@@ -50,6 +50,10 @@ export default function App() {
   const pickDay = useCallback((id: string, anchor: DOMRect) => setPicking({ id, anchor }), []);
   const closePicker = useCallback(() => setPicking(null), []);
 
+  // com "Pendentes vao para hoje" ligada, pendente nao vai para o passado
+  const pickingColumn = picking && board.columns.find((c) => board.tasks[c.id]?.some((t) => t.id === picking.id));
+  const minDay = pickingColumn && !pickingColumn.done && board.settings.pendingToToday ? board.today : undefined;
+
   // Ctrl+N cria uma tarefa na primeira coluna
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -149,6 +153,8 @@ export default function App() {
         today={board.today}
         markedDays={board.markedDays}
         onSelect={board.setDay}
+        pendingToToday={board.settings.pendingToToday}
+        onPendingToTodayChange={board.setPendingToToday}
       />
 
       <MoveDayPopover
@@ -156,6 +162,7 @@ export default function App() {
         value={board.day}
         today={board.today}
         markedDays={board.markedDays}
+        minDay={minDay}
         onSelect={(day) => picking && board.moveTaskToDay(picking.id, day)}
         onClose={closePicker}
       />

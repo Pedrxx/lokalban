@@ -3,11 +3,13 @@ import type { DropResult } from "@hello-pangea/dnd";
 import {
   COLOR_KEYS,
   DEFAULT_COLUMNS,
+  DEFAULT_SETTINGS,
   MAX_COLUMNS,
   type BoardState,
   type ColumnColor,
   type ColumnDef,
   type ColumnId,
+  type Settings,
   type Task,
 } from "../types";
 import { readBoard, writeBoard, type RawBoard } from "../lib/storage";
@@ -29,27 +31,35 @@ function withDate(task: Task, today: DayKey): Task {
   return isDayKey(task.date) ? task : { ...task, date: today };
 }
 
-function withDefaults(columns: ColumnDef[], rawTasks: Record<string, unknown>): BoardState {
+/** Configuracoes ausentes (boards antigos) ou invalidas ficam no padrao */
+function parseSettings(raw: unknown): Settings {
+  const s = (raw ?? {}) as Partial<Settings>;
+  return {
+    pendingToToday: typeof s.pendingToToday === "boolean" ? s.pendingToToday : DEFAULT_SETTINGS.pendingToToday,
+  };
+}
+
+function withDefaults(columns: ColumnDef[], rawTasks: Record<string, unknown>, rawSettings?: unknown): BoardState {
   const today = dayKey();
   const tasks: Record<ColumnId, Task[]> = {};
   for (const col of columns) {
     const list = rawTasks[col.id];
     tasks[col.id] = Array.isArray(list) ? list.filter(isTask).map((t) => withDate(t, today)) : [];
   }
-  return { columns, tasks };
+  return { columns, tasks, settings: parseSettings(rawSettings) };
 }
 
 /** Converte o que foi lido do disco (qualquer versao) e ignora dados malformados */
 function parseBoard(raw: RawBoard): BoardState {
   if (raw?.kind === "v2") {
-    const data = (raw.data ?? {}) as { columns?: unknown; tasks?: Record<string, unknown> };
+    const data = (raw.data ?? {}) as { columns?: unknown; tasks?: Record<string, unknown>; settings?: unknown };
     const columns = Array.isArray(data.columns)
       ? data.columns.filter(isColumn).map((c) => ({
           ...c,
           color: COLOR_KEYS.includes(c.color) ? c.color : "slate",
         }))
       : [];
-    if (columns.length > 0) return withDefaults(columns, data.tasks ?? {});
+    if (columns.length > 0) return withDefaults(columns, data.tasks ?? {}, data.settings);
   }
   if (raw?.kind === "v1") {
     return withDefaults(DEFAULT_COLUMNS, (raw.data ?? {}) as Record<string, unknown>);
@@ -57,12 +67,38 @@ function parseBoard(raw: RawBoard): BoardState {
   return withDefaults(DEFAULT_COLUMNS, {});
 }
 
+/** Coluna que conta como pendente (nao riscada) */
+function isPending(s: BoardState, column: ColumnId): boolean {
+  return !s.columns.find((c) => c.id === column)?.done;
+}
+
+/**
+ * "Pendentes vao para hoje": tarefas de colunas pendentes com data passada
+ * passam para hoje, no fim da lista de hoje (na ordem em que estavam)
+ */
+function carryPending(s: BoardState, today: DayKey): BoardState {
+  if (!s.settings.pendingToToday) return s;
+  let tasks: BoardState["tasks"] | null = null;
+  for (const col of s.columns) {
+    if (col.done) continue;
+    const list = s.tasks[col.id] ?? [];
+    const late = list.filter((t) => t.date < today);
+    if (late.length === 0) continue;
+    tasks ??= { ...s.tasks };
+    tasks[col.id] = [...list.filter((t) => t.date >= today), ...late.map((t) => ({ ...t, date: today }))];
+  }
+  return tasks ? { ...s, tasks } : s;
+}
+
 /**
  * Ultima acao que o aviso permite desfazer. Guarda a tarefa como era antes,
  * com a coluna e a posicao, para devolver ao mesmo lugar.
  */
 export type UndoAction = { task: Task; column: ColumnId; index: number } & (
-  { kind: "delete" } | { kind: "move"; to: DayKey }
+  | { kind: "delete" }
+  | { kind: "move"; to: DayKey }
+  // criada vendo um dia passado e levada direto para hoje: desfazer apaga
+  | { kind: "add"; to: DayKey }
 );
 
 export function useBoard() {
@@ -86,6 +122,8 @@ export function useBoard() {
   stateRef.current = state;
   const dayRef = useRef(day);
   dayRef.current = day;
+  const todayRef = useRef(today);
+  todayRef.current = today;
   const lastActionRef = useRef(lastAction);
   lastActionRef.current = lastAction;
 
@@ -114,12 +152,24 @@ export function useBoard() {
     writeBoard(state).catch((err) => console.error("Falha ao salvar as tarefas:", err));
   }, [state, ready]);
 
+  // Pendentes vao para hoje, sem aviso: ao abrir, na virada do dia e ao religar a opcao
+  const pendingToToday = state.settings.pendingToToday;
+  useEffect(() => {
+    if (ready && pendingToToday) setState((s) => carryPending(s, today));
+  }, [ready, today, pendingToToday]);
+
   // ---------------------------------------------------------------- tarefas
 
   const addTask = useCallback((column: ColumnId, title: string) => {
     const text = title.trim();
     if (!text) return;
-    const task: Task = { id: crypto.randomUUID(), title: text, createdAt: Date.now(), date: dayRef.current };
+    const s = stateRef.current;
+    const today = todayRef.current;
+    // pendente criada vendo um dia passado vai direto para hoje
+    const toToday = s.settings.pendingToToday && dayRef.current < today && isPending(s, column);
+    const date = toToday ? today : dayRef.current;
+    const task: Task = { id: crypto.randomUUID(), title: text, createdAt: Date.now(), date };
+    if (toToday) setLastAction({ kind: "add", task, column, index: -1, to: today });
     setState((s) => (s.tasks[column] ? { ...s, tasks: { ...s.tasks, [column]: [...s.tasks[column], task] } } : s));
   }, []);
 
@@ -175,11 +225,13 @@ export function useBoard() {
       const current = Object.values(s.tasks)
         .flat()
         .find((t) => t.id === task.id);
-      // excluida: volta como era; movida: mantem edicoes feitas depois, so volta o dia
-      const restored = current ? { ...current, date: task.date } : task;
       const tasks: BoardState["tasks"] = {};
       for (const [col, list] of Object.entries(s.tasks)) tasks[col] = list.filter((t) => t.id !== task.id);
-      tasks[column].splice(Math.min(index, tasks[column].length), 0, restored);
+      if (action.kind !== "add") {
+        // excluida: volta como era; movida: mantem edicoes feitas depois, so volta o dia
+        const restored = current ? { ...current, date: task.date } : task;
+        tasks[column].splice(Math.min(index, tasks[column].length), 0, restored);
+      }
       return { ...s, tasks };
     });
     setLastAction(null);
@@ -198,6 +250,17 @@ export function useBoard() {
     const from = source.droppableId;
     const to = destination.droppableId;
     const shown = dayRef.current;
+    const today = todayRef.current;
+
+    // concluida que volta a ser pendente num dia passado vai para hoje;
+    // desfazer devolve o arrasto inteiro (coluna, dia e posicao de antes)
+    const current = stateRef.current;
+    const dragged = current.tasks[from]?.filter((t) => t.date === shown)[source.index];
+    const toToday = !!dragged && current.settings.pendingToToday && shown < today && isPending(current, to);
+    if (dragged && toToday) {
+      const index = current.tasks[from].indexOf(dragged);
+      setLastAction({ kind: "move", task: dragged, column: from, index, to: today });
+    }
 
     setState((s) => {
       if (!s.tasks[from] || !s.tasks[to]) return s;
@@ -206,13 +269,18 @@ export function useBoard() {
       const src = s.tasks[from].filter((t) => t.id !== moved.id);
       const dst = from === to ? src : [...s.tasks[to]];
 
-      // entra antes da tarefa que hoje ocupa a posicao de destino no dia,
-      // ou logo depois da ultima tarefa do dia
-      const sameDay = dst.filter((t) => t.date === shown);
-      const anchor = sameDay[destination.index];
-      const last = sameDay[sameDay.length - 1];
-      const at = anchor ? dst.indexOf(anchor) : last ? dst.indexOf(last) + 1 : dst.length;
-      dst.splice(at, 0, moved);
+      if (toToday) {
+        // entra no fim da lista de hoje
+        dst.push({ ...moved, date: today });
+      } else {
+        // entra antes da tarefa que hoje ocupa a posicao de destino no dia,
+        // ou logo depois da ultima tarefa do dia
+        const sameDay = dst.filter((t) => t.date === shown);
+        const anchor = sameDay[destination.index];
+        const last = sameDay[sameDay.length - 1];
+        const at = anchor ? dst.indexOf(anchor) : last ? dst.indexOf(last) + 1 : dst.length;
+        dst.splice(at, 0, moved);
+      }
 
       return { ...s, tasks: { ...s.tasks, [from]: src, [to]: dst } };
     });
@@ -227,7 +295,7 @@ export function useBoard() {
     const used = new Set(columns.map((c) => c.color));
     const color = COLOR_KEYS.find((k) => !used.has(k)) ?? "slate";
     const column: ColumnDef = { id: crypto.randomUUID(), title: "Nova coluna", color };
-    setState((s) => ({ columns: [...s.columns, column], tasks: { ...s.tasks, [column.id]: [] } }));
+    setState((s) => ({ ...s, columns: [...s.columns, column], tasks: { ...s.tasks, [column.id]: [] } }));
     return column.id;
   }, []);
 
@@ -248,8 +316,14 @@ export function useBoard() {
     setState((s) => {
       if (s.columns.length <= 1) return s;
       const { [id]: _removed, ...tasks } = s.tasks;
-      return { columns: s.columns.filter((c) => c.id !== id), tasks };
+      return { ...s, columns: s.columns.filter((c) => c.id !== id), tasks };
     });
+  }, []);
+
+  // ---------------------------------------------------------------- configuracoes
+
+  const setPendingToToday = useCallback((on: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, pendingToToday: on } }));
   }, []);
 
   // ---------------------------------------------------------------- dias
@@ -280,6 +354,8 @@ export function useBoard() {
     day,
     setDay,
     markedDays,
+    settings: state.settings,
+    setPendingToToday,
     columns: state.columns,
     tasks: dayTasks,
     taskTotals,

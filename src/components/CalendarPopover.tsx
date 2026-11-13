@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { DayKey } from "../lib/date";
 import { cn } from "../lib/cn";
 import { Calendar } from "./Calendar";
+import { Switch } from "./Switch";
 
 type Props = {
   open: boolean;
@@ -10,10 +11,21 @@ type Props = {
   today: DayKey;
   markedDays: Set<DayKey>;
   onSelect: (day: DayKey) => void;
+  pendingToToday: boolean;
+  onPendingToTodayChange: (on: boolean) => void;
 };
 
 /** Popover do icone de calendario: escolher qual dia o quadro mostra */
-export function CalendarPopover({ open, onClose, day, today, markedDays, onSelect }: Props) {
+export function CalendarPopover({
+  open,
+  onClose,
+  day,
+  today,
+  markedDays,
+  onSelect,
+  pendingToToday,
+  onPendingToTodayChange,
+}: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -41,6 +53,14 @@ export function CalendarPopover({ open, onClose, day, today, markedDays, onSelec
         )}
       >
         <Calendar value={day} today={today} marked={markedDays} onSelect={onSelect} />
+
+        <div
+          title="Tarefas não concluídas de dias anteriores passam para hoje"
+          className="mt-2 flex items-center justify-between gap-2 border-t border-black/[0.06] px-1 pt-2.5 dark:border-white/[0.08]"
+        >
+          <span className="text-[12px] text-black/65 dark:text-white/70">Pendentes vão para hoje</span>
+          <Switch label="Pendentes vão para hoje" checked={pendingToToday} onChange={onPendingToTodayChange} />
+        </div>
       </div>
     </>
   );
