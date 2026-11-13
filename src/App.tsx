@@ -170,12 +170,15 @@ export default function App() {
       <ColumnSettings
         open={panel === "columns"}
         onClose={closePanel}
+        day={board.day}
         columns={board.columns}
+        locked={board.lockedColumns}
         taskCounts={board.taskTotals}
         onAdd={board.addColumn}
         onRename={board.renameColumn}
         onRecolor={board.recolorColumn}
         onToggleDone={board.setColumnDone}
+        onTogglePin={board.setColumnPinned}
         onDelete={board.deleteColumn}
       />
 

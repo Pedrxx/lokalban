@@ -29,6 +29,10 @@ export type ColumnDef = {
   color: ColumnColor;
   /** tarefas desta coluna aparecem riscadas (ex.: "Concluido") */
   done?: boolean;
+  /** primeiro dia em que a coluna aparece (sem = desde sempre) */
+  from?: DayKey;
+  /** ultimo dia em que a coluna aparece (sem = fixa, segue nos proximos dias) */
+  until?: DayKey;
 };
 
 /** Preferencias salvas junto com o quadro (chave "settings" do board.json) */

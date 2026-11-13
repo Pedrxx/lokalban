@@ -62,6 +62,14 @@ export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} fill="currentColor" stroke="none" {...props}>
+      <path d="M9.8 1.2a1 1 0 0 1 1.4 0l3.6 3.6a1 1 0 0 1 0 1.4l-1.1 1.1a1 1 0 0 1-1 .25L10.4 9.8l.3 2.6a1 1 0 0 1-.3.8l-.7.7a.5.5 0 0 1-.7 0L6.4 11.3 2.6 15.1a.6.6 0 0 1-.85-.85L5.6 10.4 3 7.8a.5.5 0 0 1 0-.7l.7-.7a1 1 0 0 1 .8-.3l2.6.3 2.25-2.3a1 1 0 0 1 .25-1z" />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>

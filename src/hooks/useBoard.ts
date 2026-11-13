@@ -57,6 +57,9 @@ function parseBoard(raw: RawBoard): BoardState {
       ? data.columns.filter(isColumn).map((c) => ({
           ...c,
           color: COLOR_KEYS.includes(c.color) ? c.color : "slate",
+          // colunas sem periodo (versoes anteriores) sao fixas desde sempre
+          from: isDayKey(c.from) ? c.from : undefined,
+          until: isDayKey(c.until) ? c.until : undefined,
         }))
       : [];
     if (columns.length > 0) return withDefaults(columns, data.tasks ?? {}, data.settings);
@@ -70,6 +73,27 @@ function parseBoard(raw: RawBoard): BoardState {
 /** Coluna que conta como pendente (nao riscada) */
 function isPending(s: BoardState, column: ColumnId): boolean {
   return !s.columns.find((c) => c.id === column)?.done;
+}
+
+/** Colunas do dia: as do periodo e, sempre, as que tem tarefas nesse dia */
+function columnsOn(s: BoardState, day: DayKey): ColumnDef[] {
+  return s.columns.filter(
+    (c) => ((!c.from || c.from <= day) && (!c.until || day <= c.until)) || s.tasks[c.id]?.some((t) => t.date === day),
+  );
+}
+
+/** Fixa que ja vale no dia: garante colunas nesse dia e nos seguintes */
+function coversFromDay(c: ColumnDef, day: DayKey): boolean {
+  return !c.until && (!c.from || c.from <= day);
+}
+
+/**
+ * Coluna fixa que nao pode ser desafixada nem excluida vendo este dia:
+ * e a unica fixa que ja vale nele (sem ela, sobraria dia sem colunas)
+ */
+function isLocked(columns: ColumnDef[], id: ColumnId, day: DayKey): boolean {
+  const col = columns.find((c) => c.id === id);
+  return !!col && !col.until && !columns.some((c) => c.id !== id && coversFromDay(c, day));
 }
 
 /**
@@ -288,13 +312,17 @@ export function useBoard() {
 
   // ---------------------------------------------------------------- colunas
 
-  /** Cria uma coluna e devolve o id (ou null se ja chegou no limite) */
+  /**
+   * Cria uma coluna so para o dia exibido e devolve o id (ou null se o dia
+   * ja chegou no limite). Fica no fim da ordem, que e a mesma em todos os dias
+   */
   const addColumn = useCallback((): ColumnId | null => {
-    const { columns } = stateRef.current;
-    if (columns.length >= MAX_COLUMNS) return null;
-    const used = new Set(columns.map((c) => c.color));
+    const day = dayRef.current;
+    const shown = columnsOn(stateRef.current, day);
+    if (shown.length >= MAX_COLUMNS) return null;
+    const used = new Set(shown.map((c) => c.color));
     const color = COLOR_KEYS.find((k) => !used.has(k)) ?? "slate";
-    const column: ColumnDef = { id: crypto.randomUUID(), title: "Nova coluna", color };
+    const column: ColumnDef = { id: crypto.randomUUID(), title: "Nova coluna", color, from: day, until: day };
     setState((s) => ({ ...s, columns: [...s.columns, column], tasks: { ...s.tasks, [column.id]: [] } }));
     return column.id;
   }, []);
@@ -311,10 +339,28 @@ export function useBoard() {
   const recolorColumn = useCallback((id: ColumnId, color: ColumnColor) => updateColumn(id, { color }), [updateColumn]);
   const setColumnDone = useCallback((id: ColumnId, done: boolean) => updateColumn(id, { done }), [updateColumn]);
 
-  /** Exclui a coluna e as tarefas dela (sempre sobra pelo menos uma coluna) */
-  const deleteColumn = useCallback((id: ColumnId) => {
+  /**
+   * Fixar vendo o dia D: aparece de D em diante (sem esconder dias em que ja
+   * aparecia). Desafixar vendo E: continua ate E.
+   */
+  const setColumnPinned = useCallback((id: ColumnId, pinned: boolean) => {
+    const day = dayRef.current;
     setState((s) => {
-      if (s.columns.length <= 1) return s;
+      if (!pinned && isLocked(s.columns, id, day)) return s;
+      const columns = s.columns.map((c) => {
+        if (c.id !== id) return c;
+        if (pinned) return { ...c, from: c.from && c.from > day ? day : c.from, until: undefined };
+        return { ...c, until: c.from && c.from > day ? c.from : day };
+      });
+      return { ...s, columns };
+    });
+  }, []);
+
+  /** Exclui a coluna e as tarefas dela em todos os dias (sempre sobra uma fixa) */
+  const deleteColumn = useCallback((id: ColumnId) => {
+    const day = dayRef.current;
+    setState((s) => {
+      if (s.columns.length <= 1 || isLocked(s.columns, id, day)) return s;
       const { [id]: _removed, ...tasks } = s.tasks;
       return { ...s, columns: s.columns.filter((c) => c.id !== id), tasks };
     });
@@ -334,6 +380,15 @@ export function useBoard() {
     for (const [col, list] of Object.entries(state.tasks)) tasks[col] = list.filter((t) => t.date === day);
     return tasks;
   }, [state.tasks, day]);
+
+  /** Colunas do dia exibido, na ordem global */
+  const dayColumns = useMemo(() => columnsOn(state, day), [state, day]);
+
+  /** Fixas que nao podem ser desafixadas nem excluidas vendo este dia */
+  const lockedColumns = useMemo(
+    () => new Set(state.columns.filter((c) => isLocked(state.columns, c.id, day)).map((c) => c.id)),
+    [state.columns, day],
+  );
 
   /** Total de tarefas por coluna, somando todos os dias */
   const taskTotals = useMemo(
@@ -356,7 +411,8 @@ export function useBoard() {
     markedDays,
     settings: state.settings,
     setPendingToToday,
-    columns: state.columns,
+    columns: dayColumns,
+    lockedColumns,
     tasks: dayTasks,
     taskTotals,
     addTask,
@@ -371,6 +427,7 @@ export function useBoard() {
     renameColumn,
     recolorColumn,
     setColumnDone,
+    setColumnPinned,
     deleteColumn,
   };
 }
