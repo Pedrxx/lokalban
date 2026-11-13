@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { GlassWindow } from "./components/GlassWindow";
 import { TitleBar } from "./components/TitleBar";
@@ -17,13 +17,19 @@ import { useTheme } from "./hooks/useTheme";
 import { useAltShortcuts } from "./hooks/useAltShortcuts";
 import type { ColumnId } from "./types";
 import { cn } from "./lib/cn";
-import { addDays, formatDayShort } from "./lib/date";
+import { addDays, formatDayShort, type DayKey } from "./lib/date";
+import { prefersReducedMotion } from "./lib/motion";
 import { applyScale } from "./lib/scale";
 
 /** Popover aberto na barra de titulo (um por vez) */
 type Panel = "calendar" | "columns" | "settings" | null;
 
 const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90";
+
+/** Duracao da saida do card (excluir, levar a outro dia) antes de sair do quadro */
+const LEAVE_MS = 180;
+/** Quanto tempo o card devolvido pelo Desfazer fica marcado para entrar animado */
+const APPEAR_MS = 400;
 
 export default function App() {
   const board = useBoard();
@@ -68,6 +74,42 @@ export default function App() {
   const pickDay = useCallback((id: string, anchor: DOMRect) => setPicking({ id, anchor }), []);
   const closePicker = useCallback(() => setPicking(null), []);
 
+  // Saida e volta animadas: o card anima e so depois a tarefa sai do quadro
+  // (excluir, levar a outro dia); no Desfazer ela volta e entra animada
+  const [leavingIds, setLeavingIds] = useState<Set<string>>(() => new Set());
+  const [appearingIds, setAppearingIds] = useState<Set<string>>(() => new Set());
+  const markFor = useCallback((set: typeof setLeavingIds, id: string, ms: number, then?: () => void) => {
+    set((s) => new Set(s).add(id));
+    window.setTimeout(
+      () => {
+        then?.();
+        set((s) => {
+          const next = new Set(s);
+          next.delete(id);
+          return next;
+        });
+      },
+      prefersReducedMotion() ? 0 : ms,
+    );
+  }, []);
+  const { deleteTask, moveTaskToDay, undo, lastAction } = board;
+  const removeTask = useCallback(
+    (id: string) => markFor(setLeavingIds, id, LEAVE_MS, () => deleteTask(id)),
+    [markFor, deleteTask],
+  );
+  const moveToDay = useCallback(
+    (id: string, to: DayKey) => {
+      if (to === board.day) return;
+      markFor(setLeavingIds, id, LEAVE_MS, () => moveTaskToDay(id, to));
+    },
+    [markFor, moveTaskToDay, board.day],
+  );
+  const undoWithEntry = useCallback(() => {
+    const id = lastAction?.task.id;
+    undo();
+    if (id) markFor(setAppearingIds, id, APPEAR_MS);
+  }, [markFor, undo, lastAction]);
+
   // um so contexto de arrasto: colunas (pelo topo) e tarefas
   const { moveColumn, moveTask } = board;
   const onDragEnd = useCallback(
@@ -84,6 +126,16 @@ export default function App() {
 
   // Atalhos com Alt (segurar Alt mostra as teclas sobre os botoes)
   const { setDay, today, day } = board;
+  // Troca de dia: o quadro novo entra do lado da navegacao (da direita ao
+  // avancar, da esquerda ao voltar). Calculado no render, para o quadro novo
+  // ja nascer com a classe de entrada certa
+  const shownDay = useRef(board.day);
+  const dayDirection = useRef(0);
+  if (board.day !== shownDay.current) {
+    dayDirection.current = board.day > shownDay.current ? 1 : -1;
+    shownDay.current = board.day;
+  }
+
   const showTips = useAltShortcuts({
     KeyN: newTask,
     KeyC: () => togglePanel("columns"),
@@ -184,7 +236,8 @@ export default function App() {
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="board" type="COLUMN" direction="horizontal">
+            {/* key por dia: trocar de dia monta um quadro novo, que entra deslizando */}
+            <Droppable key={board.day} droppableId="board" type="COLUMN" direction="horizontal">
               {(provided) => (
                 // flex com espaco por padding (a lib nao considera o gap ao deslocar as colunas)
                 <main
@@ -192,7 +245,9 @@ export default function App() {
                   {...provided.droppableProps}
                   className={cn(
                     "flex min-h-0 flex-1 px-1.5 pb-3",
-                    "transition-opacity duration-300 ease-mac",
+                    "transition-[opacity,translate] duration-300 ease-mac",
+                    dayDirection.current > 0 && "starting:translate-x-3 starting:opacity-0",
+                    dayDirection.current < 0 && "starting:-translate-x-3 starting:opacity-0",
                     win.collapsed && "pointer-events-none opacity-0",
                   )}
                 >
@@ -207,8 +262,10 @@ export default function App() {
                       onEndCompose={() => setComposing((c) => (c === col.id ? null : c))}
                       onAdd={(title) => board.addTask(col.id, title)}
                       onUpdate={board.updateTask}
-                      onDelete={board.deleteTask}
+                      onDelete={removeTask}
                       onPickDay={pickDay}
+                      leavingIds={leavingIds}
+                      appearingIds={appearingIds}
                     />
                   ))}
                   {provided.placeholder}
@@ -235,7 +292,7 @@ export default function App() {
           today={board.today}
           markedDays={board.markedDays}
           minDay={minDay}
-          onSelect={(day) => picking && board.moveTaskToDay(picking.id, day)}
+          onSelect={(day) => picking && moveToDay(picking.id, day)}
           onClose={closePicker}
         />
 
@@ -268,7 +325,7 @@ export default function App() {
           onDelete={board.deleteColumn}
         />
 
-        <UndoToast action={board.lastAction} today={board.today} onUndo={board.undo} onDismiss={board.dismissUndo} />
+        <UndoToast action={board.lastAction} today={board.today} onUndo={undoWithEntry} onDismiss={board.dismissUndo} />
       </KeyTipsContext.Provider>
     </GlassWindow>
   );

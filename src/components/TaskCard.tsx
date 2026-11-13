@@ -14,6 +14,10 @@ type Props = {
   onDelete: (id: string) => void;
   /** abre o mini calendario ancorado no botao clicado */
   onPickDay: (id: string, anchor: DOMRect) => void;
+  /** saindo (excluida ou levada a outro dia): some, encolhe e os de baixo sobem */
+  leaving?: boolean;
+  /** voltou pelo Desfazer: entra com a mesma animacao de tarefa nova */
+  appear?: boolean;
 };
 
 /** Superficie de vidro compartilhada pelos cards e pelo campo de nova tarefa */
@@ -25,12 +29,21 @@ const ENTER_WINDOW_MS = 1000;
 /** Duracao da entrada (a classe sai depois disso) */
 const ENTER_MS = 250;
 
-export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, onDelete, onPickDay }: Props) {
+export const TaskCard = memo(function TaskCard({
+  task,
+  index,
+  done,
+  onUpdate,
+  onDelete,
+  onPickDay,
+  leaving = false,
+  appear = false,
+}: Props) {
   const [editing, setEditing] = useState(false);
-  // So tarefa recem-criada entra com animacao, e a classe sai logo depois:
-  // mudar de coluna (remonta o card) ou mover a coluna (reinsere no DOM)
-  // nao pode repetir a entrada, senao o card "pisca" ao soltar
-  const [entering, setEntering] = useState(() => Date.now() - task.createdAt < ENTER_WINDOW_MS);
+  // So tarefa recem-criada (ou devolvida pelo Desfazer) entra com animacao, e
+  // a classe sai logo depois: mudar de coluna (remonta o card) ou mover a
+  // coluna (reinsere no DOM) nao pode repetir a entrada, senao o card "pisca"
+  const [entering, setEntering] = useState(() => appear || Date.now() - task.createdAt < ENTER_WINDOW_MS);
   useEffect(() => {
     if (!entering) return;
     const timer = window.setTimeout(() => setEntering(false), ENTER_MS);
@@ -38,14 +51,22 @@ export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, on
   }, [entering]);
 
   return (
-    <Draggable draggableId={task.id} index={index} isDragDisabled={editing}>
+    <Draggable draggableId={task.id} index={index} isDragDisabled={editing || leaving}>
       {(provided, snapshot) => (
-        // O elemento externo recebe o transform da lib; efeitos visuais ficam no interno
+        // O elemento externo recebe o transform da lib; efeitos visuais ficam no interno.
+        // Entrando e saindo, o externo anima a altura (os vizinhos acompanham)
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className="group/handle pb-2 outline-none"
+          className={cn(
+            "group/handle outline-none",
+            "transition-[height,padding-bottom] ease-mac",
+            (entering || leaving) && "overflow-clip [overflow-clip-margin:4px]",
+            entering && "duration-200 starting:h-0 starting:pb-0",
+            // pb-2 e pb-0 nunca juntas (no CSS a pb-2 venceria e a saida nao animaria)
+            leaving ? "h-0 pb-0 duration-[180ms]" : "pb-2",
+          )}
         >
           <div
             onDoubleClick={() => setEditing(true)}
@@ -56,6 +77,7 @@ export const TaskCard = memo(function TaskCard({ task, index, done, onUpdate, on
               // com elas na transicao o card "assenta" suave ao ser solto
               "transition-[background-color,box-shadow,scale,rotate,opacity] duration-200 ease-mac",
               entering && "starting:scale-95 starting:opacity-0",
+              leaving && "scale-95 opacity-0",
               "hover:bg-white/95 dark:hover:bg-white/[0.11]",
               snapshot.isDragging &&
                 "scale-[1.03] rotate-[0.8deg] bg-white/95 shadow-[0_14px_34px_rgb(0_0_0/0.22)] dark:bg-[#3a3a3e]/95",

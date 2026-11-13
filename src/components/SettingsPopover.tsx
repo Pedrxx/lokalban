@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ThemePref } from "../lib/theme";
 import { SCALES, type Scale } from "../lib/scale";
 import { cn } from "../lib/cn";
+import { popoverMotion } from "../lib/motion";
 import { Switch } from "./Switch";
 
 const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
@@ -54,21 +55,19 @@ export function SettingsPopover({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
     <>
       {/* clique fora fecha */}
-      <div className="absolute inset-0 z-20" onMouseDown={onClose} />
+      {open && <div className="absolute inset-0 z-20" onMouseDown={onClose} />}
 
+      {/* fica montado para animar tambem ao fechar */}
       <div
         role="dialog"
         aria-label="Configurações"
         className={cn(
           "absolute top-11 right-3 z-30 w-80 origin-top-right rounded-xl p-3",
           "glass-edge bg-white/90 shadow-[0_18px_48px_rgb(0_0_0/0.25)] dark:bg-[#2a2a2d]/95",
-          "transition-[opacity,scale,translate] duration-200 ease-mac",
-          "starting:-translate-y-1 starting:scale-[0.97] starting:opacity-0",
+          popoverMotion(open),
         )}
       >
         <h3 className="px-1 pb-2 text-[12px] font-semibold text-black/50 dark:text-white/50">Configurações</h3>
@@ -159,27 +158,75 @@ function Segmented<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  // O destaque branco e um elemento so, atras das opcoes, que desliza ate a
+  // escolhida (como no macOS). Posicao medida nos botoes; so anima apos um
+  // clique, para nao atravessar o controle quando o popover abre
+  const container = useRef<HTMLDivElement>(null);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
+  const [sliding, setSliding] = useState(false);
+  const index = options.findIndex((o) => o.value === value);
+
+  const measure = useCallback(() => {
+    const b = buttons.current[index];
+    // escondido (popover fechado) nao tem medida: espera o ResizeObserver
+    if (b && b.offsetWidth) setThumb({ left: b.offsetLeft, width: b.offsetWidth });
+  }, [index]);
+
+  useLayoutEffect(measure, [measure]);
+  useEffect(() => {
+    const el = container.current;
+    if (!el) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure]);
+
+  useEffect(() => {
+    if (!sliding) return;
+    const timer = window.setTimeout(() => setSliding(false), 250);
+    return () => window.clearTimeout(timer);
+  }, [sliding]);
+
   return (
     <div
+      ref={container}
       role="radiogroup"
       aria-labelledby={labelledBy}
-      className="flex rounded-lg bg-black/[0.06] p-0.5 dark:bg-white/[0.08]"
+      className="relative flex rounded-lg bg-black/[0.06] p-0.5 dark:bg-white/[0.08]"
     >
-      {options.map((opt) => {
+      {thumb && (
+        <span
+          aria-hidden
+          data-own-transition
+          style={{ left: thumb.left, width: thumb.width }}
+          className={cn(
+            "absolute inset-y-0.5 rounded-md bg-white shadow-[0_1px_2px_rgb(0_0_0/0.15)] dark:bg-white/20",
+            sliding && "transition-[left,width] duration-200 ease-mac",
+          )}
+        />
+      )}
+      {options.map((opt, i) => {
         const selected = opt.value === value;
         return (
           <button
             key={opt.value}
+            ref={(el) => {
+              buttons.current[i] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={selected}
-            onClick={() => onChange(opt.value)}
+            onClick={() => {
+              if (!selected) setSliding(true);
+              onChange(opt.value);
+            }}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[12px] font-medium whitespace-nowrap",
-              "transition-[background-color,color,box-shadow] duration-150 ease-mac",
+              "relative rounded-md px-2.5 py-1 text-[12px] font-medium whitespace-nowrap",
+              "transition-colors duration-150 ease-mac",
               "focus-visible:outline-2 focus-visible:outline-sky-500",
               selected
-                ? "bg-white text-black/85 shadow-[0_1px_2px_rgb(0_0_0/0.15)] dark:bg-white/20 dark:text-white"
+                ? "text-black/85 dark:text-white"
                 : "text-black/55 hover:text-black/80 dark:text-white/60 dark:hover:text-white/85",
             )}
           >
