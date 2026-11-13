@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { GlassWindow } from "./components/GlassWindow";
 import { TitleBar } from "./components/TitleBar";
@@ -126,6 +126,16 @@ export default function App() {
 
   // Atalhos com Alt (segurar Alt mostra as teclas sobre os botoes)
   const { setDay, today, day } = board;
+  // Troca de dia: o quadro novo entra do lado da navegacao (da direita ao
+  // avancar, da esquerda ao voltar). Calculado no render, para o quadro novo
+  // ja nascer com a classe de entrada certa
+  const shownDay = useRef(board.day);
+  const dayDirection = useRef(0);
+  if (board.day !== shownDay.current) {
+    dayDirection.current = board.day > shownDay.current ? 1 : -1;
+    shownDay.current = board.day;
+  }
+
   const showTips = useAltShortcuts({
     KeyN: newTask,
     KeyC: () => togglePanel("columns"),
@@ -226,7 +236,8 @@ export default function App() {
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="board" type="COLUMN" direction="horizontal">
+            {/* key por dia: trocar de dia monta um quadro novo, que entra deslizando */}
+            <Droppable key={board.day} droppableId="board" type="COLUMN" direction="horizontal">
               {(provided) => (
                 // flex com espaco por padding (a lib nao considera o gap ao deslocar as colunas)
                 <main
@@ -234,7 +245,9 @@ export default function App() {
                   {...provided.droppableProps}
                   className={cn(
                     "flex min-h-0 flex-1 px-1.5 pb-3",
-                    "transition-opacity duration-300 ease-mac",
+                    "transition-[opacity,translate] duration-300 ease-mac",
+                    dayDirection.current > 0 && "starting:translate-x-3 starting:opacity-0",
+                    dayDirection.current < 0 && "starting:-translate-x-3 starting:opacity-0",
                     win.collapsed && "pointer-events-none opacity-0",
                   )}
                 >

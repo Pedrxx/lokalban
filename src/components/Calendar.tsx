@@ -23,14 +23,27 @@ type Props = {
  */
 export function Calendar({ value, today, marked, minDay, onSelect }: Props) {
   const [view, setView] = useState(() => monthOf(value));
+  // trocar de mes por ‹ › ou "Hoje": a grade nova entra deslizando desse lado.
+  // Zera depois, senao ela deslizaria de novo a cada vez que o popover abre
+  const [slide, setSlide] = useState(0);
+  useEffect(() => {
+    if (!slide) return;
+    const timer = window.setTimeout(() => setSlide(0), 300);
+    return () => window.clearTimeout(timer);
+  }, [slide]);
 
   // acompanha mudancas de fora (ex.: virada do dia)
   useEffect(() => setView(monthOf(value)), [value]);
 
-  const shift = (delta: number) => setView((v) => monthOf(dayKey(new Date(v.year, v.month + delta, 1))));
+  const shift = (delta: number) => {
+    setSlide(delta);
+    setView((v) => monthOf(dayKey(new Date(v.year, v.month + delta, 1))));
+  };
 
   const goToday = () => {
-    setView(monthOf(today));
+    const target = monthOf(today);
+    setSlide(Math.sign(target.year * 12 + target.month - (view.year * 12 + view.month)));
+    setView(target);
     onSelect(today);
   };
 
@@ -74,7 +87,15 @@ export function Calendar({ value, today, marked, minDay, onSelect }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-0.5">
+      <div
+        key={view.year * 12 + view.month}
+        className={cn(
+          "grid grid-cols-7 gap-y-0.5",
+          "transition-[opacity,translate] duration-200 ease-mac",
+          slide > 0 && "starting:translate-x-2 starting:opacity-0",
+          slide < 0 && "starting:-translate-x-2 starting:opacity-0",
+        )}
+      >
         {cells.map((key, i) => {
           if (!key) return <span key={i} className="h-7" />;
           const selected = key === value;
