@@ -30,14 +30,14 @@ estrada ou está no primeiro PR, tem espaço para você aqui. Veja o [CONTRIBUTI
 ## Funcionalidades
 
 - 🪟 **Widget de desktop** — janela sem moldura, fora da barra de tarefas, fica atrás das outras janelas
-- 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro/escuro automático
+- 🧊 **Vidro de verdade** — desfoque Acrylic nativo do Windows sobre o papel de parede, tema claro, escuro ou automático (segue o Windows) nas Configurações
 - 🚦 **Botões "semáforo"** estilo macOS — esconder, recolher até a barra de título, fixar acima das janelas
 - 🗂️ **Kanban completo** — criar, editar, excluir (com desfazer) e arrastar tarefas entre colunas
 - 📅 **Histórico por dia** — calendário na barra para ver o quadro de qualquer dia, passado ou futuro, e mover tarefas entre dias; pendentes de dias anteriores passam para hoje (opcional)
-- ⚙️ **Colunas configuráveis** — renomear, criar (até 5), trocar cor, marcar como "concluída", fixar em todos os dias ou deixar só num dia
+- ⚙️ **Colunas configuráveis** — renomear, criar (até 5), escolher a cor (paleta do macOS), reordenar arrastando, marcar como "concluída", fixar em todos os dias ou deixar só num dia
 - 📌 **Ícone na bandeja** — mostrar/esconder, iniciar com o Windows, abrir a pasta dos dados, sair
 - 💾 **Seus dados num JSON** — `%APPDATA%\com.lokalban.widget\board.json`, com backup automático da versão anterior
-- 📍 Lembra posição e tamanho da janela · ⌨️ `Ctrl+N` cria tarefa · uma única instância
+- 📍 Lembra posição e tamanho da janela · 🔍 escala de 90% a 125% nas Configurações · ⌨️ `Ctrl+N` cria tarefa · uma única instância
 
 ## Instalação
 
@@ -117,7 +117,7 @@ Ideias abertas para quem quiser pegar (veja também as issues com `good first is
 - [ ] Fixar de verdade no desktop (resistir ao `Win + D`)
 - [ ] Prioridade e cor por card
 - [ ] Data de entrega com destaque de atraso
-- [ ] Reordenar colunas arrastando
+- [x] Reordenar colunas arrastando
 - [ ] Vários quadros (ex.: "Trabalho", "Pessoal")
 - [ ] Atalhos de teclado globais (mostrar/esconder de qualquer lugar)
 - [ ] Exportar/importar quadro

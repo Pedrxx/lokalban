@@ -4,11 +4,19 @@ import { isTauri } from "@tauri-apps/api/core";
 import "@fontsource-variable/inter";
 import "./index.css";
 import App from "./App";
+import { applyTheme, applyWindowTheme, readCachedTheme } from "./lib/theme";
+import { applyScale, readCachedScale } from "./lib/scale";
 
 // Fora do Tauri (navegador comum) ativa o "papel de parede" de preview
 if (!isTauri()) {
   document.documentElement.classList.add("browser-preview");
 }
+
+// Tema e escala antes do primeiro quadro (a janela aparece antes do board.json ser lido)
+const cachedTheme = readCachedTheme();
+applyTheme(cachedTheme);
+applyWindowTheme(cachedTheme);
+applyScale(readCachedScale());
 
 // No app instalado, esconde o menu de clique direito do navegador
 // (mantido em campos de texto para copiar/colar)

@@ -1,4 +1,6 @@
 import type { DayKey } from "./lib/date";
+import type { Scale } from "./lib/scale";
+import type { ThemePref } from "./lib/theme";
 
 export type ColumnId = string;
 
@@ -10,18 +12,35 @@ export type Task = {
   date: DayKey;
 };
 
-/** Cores disponiveis para a bolinha da coluna (classes estaticas p/ o Tailwind) */
+/**
+ * Cores da bolinha da coluna, na ordem da paleta de destaque do macOS
+ * (classes estaticas p/ o Tailwind). As chaves ficam no board.json
+ */
 export const COLUMN_COLORS = {
   sky: "bg-sky-400",
-  amber: "bg-amber-400",
-  emerald: "bg-emerald-400",
   violet: "bg-violet-400",
   rose: "bg-rose-400",
+  red: "bg-red-500",
+  orange: "bg-orange-400",
+  amber: "bg-amber-400",
+  emerald: "bg-emerald-400",
   slate: "bg-slate-400",
 } as const;
 
 export type ColumnColor = keyof typeof COLUMN_COLORS;
 export const COLOR_KEYS = Object.keys(COLUMN_COLORS) as ColumnColor[];
+
+/** Nomes das cores (dicas do seletor) */
+export const COLOR_NAMES: Record<ColumnColor, string> = {
+  sky: "Azul",
+  violet: "Roxo",
+  rose: "Rosa",
+  red: "Vermelho",
+  orange: "Laranja",
+  amber: "Amarelo",
+  emerald: "Verde",
+  slate: "Grafite",
+};
 
 export type ColumnDef = {
   id: ColumnId;
@@ -39,9 +58,13 @@ export type ColumnDef = {
 export type Settings = {
   /** pendentes de dias passados vao para hoje */
   pendingToToday: boolean;
+  /** aparencia: automatico (segue o Windows), claro ou escuro */
+  theme: ThemePref;
+  /** escala do app (zoom): 0.9, 1, 1.1 ou 1.25 */
+  scale: Scale;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true };
+export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1 };
 
 export type BoardState = {
   columns: ColumnDef[];

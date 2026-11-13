@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { DragDropContext } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { GlassWindow } from "./components/GlassWindow";
 import { TitleBar } from "./components/TitleBar";
 import { Column } from "./components/Column";
@@ -8,21 +8,31 @@ import { CalendarPopover } from "./components/CalendarPopover";
 import { MoveDayPopover } from "./components/MoveDayPopover";
 import { IconButton } from "./components/IconButton";
 import { CalendarIcon, GearIcon, PlusIcon } from "./components/icons";
+import { SettingsPopover } from "./components/SettingsPopover";
 import { UndoToast } from "./components/UndoToast";
 import { useWindowControls } from "./hooks/useWindowControls";
 import { useBoard } from "./hooks/useBoard";
+import { useTheme } from "./hooks/useTheme";
 import type { ColumnId } from "./types";
 import { cn } from "./lib/cn";
 import { formatDayShort } from "./lib/date";
+import { applyScale } from "./lib/scale";
 
 /** Popover aberto na barra de titulo (um por vez) */
-type Panel = "calendar" | "columns" | null;
+type Panel = "calendar" | "columns" | "settings" | null;
 
 const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:text-white/90";
 
 export default function App() {
-  const win = useWindowControls();
   const board = useBoard();
+  const { theme, scale } = board.settings;
+  const win = useWindowControls(scale);
+  useTheme(theme, board.ready);
+
+  // escala do board.json (antes de ler, vale a copia aplicada no main.tsx)
+  useEffect(() => {
+    if (board.ready) applyScale(scale);
+  }, [board.ready, scale]);
   const [composing, setComposing] = useState<ColumnId | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   /** tarefa cujo mini calendario esta aberto, e o botao onde ancorar */
@@ -49,6 +59,16 @@ export default function App() {
   const closePanel = useCallback(() => setPanel(null), []);
   const pickDay = useCallback((id: string, anchor: DOMRect) => setPicking({ id, anchor }), []);
   const closePicker = useCallback(() => setPicking(null), []);
+
+  // um so contexto de arrasto: colunas (pelo topo) e tarefas
+  const { moveColumn, moveTask } = board;
+  const onDragEnd = useCallback(
+    (result: DropResult) => {
+      if (result.type !== "COLUMN") return moveTask(result);
+      if (result.destination) moveColumn(result.source.index, result.destination.index);
+    },
+    [moveColumn, moveTask],
+  );
 
   // com "Pendentes vao para hoje" ligada, pendente nao vai para o passado
   const pickingColumn = picking && board.columns.find((c) => board.tasks[c.id]?.some((t) => t.id === picking.id));
@@ -93,7 +113,11 @@ export default function App() {
                 {formatDayShort(board.day)}
               </button>
             )}
-            <IconButton label="Nova tarefa (Ctrl+N)" onClick={newTask}>
+            <IconButton
+              label="Colunas"
+              onClick={() => togglePanel("columns")}
+              className={cn(panel === "columns" && activeButton)}
+            >
               <PlusIcon />
             </IconButton>
             <IconButton
@@ -104,9 +128,9 @@ export default function App() {
               <CalendarIcon />
             </IconButton>
             <IconButton
-              label="Colunas"
-              onClick={() => togglePanel("columns")}
-              className={cn(panel === "columns" && activeButton)}
+              label="Configurações"
+              onClick={() => togglePanel("settings")}
+              className={cn(panel === "settings" && activeButton)}
             >
               <GearIcon />
             </IconButton>
@@ -119,30 +143,38 @@ export default function App() {
           {board.loadError ? `Não foi possível ler as tarefas salvas: ${board.loadError}` : null}
         </div>
       ) : (
-        <DragDropContext onDragEnd={board.moveTask}>
-          <main
-            style={{ gridTemplateColumns: `repeat(${board.columns.length}, minmax(0, 1fr))` }}
-            className={cn(
-              "grid min-h-0 flex-1 gap-3 px-3 pb-3",
-              "transition-opacity duration-300 ease-mac",
-              win.collapsed && "pointer-events-none opacity-0",
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="board" type="COLUMN" direction="horizontal">
+            {(provided) => (
+              // flex com espaco por padding (a lib nao considera o gap ao deslocar as colunas)
+              <main
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className={cn(
+                  "flex min-h-0 flex-1 px-1.5 pb-3",
+                  "transition-opacity duration-300 ease-mac",
+                  win.collapsed && "pointer-events-none opacity-0",
+                )}
+              >
+                {board.columns.map((col, index) => (
+                  <Column
+                    key={col.id}
+                    column={col}
+                    index={index}
+                    tasks={board.tasks[col.id] ?? []}
+                    composing={composing === col.id}
+                    onStartCompose={() => setComposing(col.id)}
+                    onEndCompose={() => setComposing((c) => (c === col.id ? null : c))}
+                    onAdd={(title) => board.addTask(col.id, title)}
+                    onUpdate={board.updateTask}
+                    onDelete={board.deleteTask}
+                    onPickDay={pickDay}
+                  />
+                ))}
+                {provided.placeholder}
+              </main>
             )}
-          >
-            {board.columns.map((col) => (
-              <Column
-                key={col.id}
-                column={col}
-                tasks={board.tasks[col.id] ?? []}
-                composing={composing === col.id}
-                onStartCompose={() => setComposing(col.id)}
-                onEndCompose={() => setComposing((c) => (c === col.id ? null : c))}
-                onAdd={(title) => board.addTask(col.id, title)}
-                onUpdate={board.updateTask}
-                onDelete={board.deleteTask}
-                onPickDay={pickDay}
-              />
-            ))}
-          </main>
+          </Droppable>
         </DragDropContext>
       )}
 
@@ -167,6 +199,15 @@ export default function App() {
         onClose={closePicker}
       />
 
+      <SettingsPopover
+        open={panel === "settings"}
+        onClose={closePanel}
+        theme={theme}
+        onThemeChange={board.setTheme}
+        scale={scale}
+        onScaleChange={board.setScale}
+      />
+
       <ColumnSettings
         open={panel === "columns"}
         onClose={closePanel}
@@ -179,6 +220,7 @@ export default function App() {
         onRecolor={board.recolorColumn}
         onToggleDone={board.setColumnDone}
         onTogglePin={board.setColumnPinned}
+        onMove={board.moveColumn}
         onDelete={board.deleteColumn}
       />
 
