@@ -1,4 +1,8 @@
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use tauri::{
     AppHandle, Manager, WindowEvent,
@@ -57,6 +61,15 @@ fn save_board(app: AppHandle, json: String) -> Result<(), String> {
 }
 
 // ------------------------------------------------------------------ janela
+
+/// Ao fechar (botao vermelho / Alt+F4): true esconde na bandeja, false sai.
+/// Comeca escondendo; o app manda a configuracao salva assim que le o board.json
+struct CloseToTray(AtomicBool);
+
+#[tauri::command]
+fn set_close_to_tray(state: tauri::State<CloseToTray>, enabled: bool) {
+    state.0.store(enabled, Ordering::Relaxed);
+}
 
 fn show_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window(MAIN) {
@@ -203,17 +216,24 @@ pub fn run() {
             show_main(app.handle());
             Ok(())
         })
+        .manage(CloseToTray(AtomicBool::new(true)))
         .on_window_event(|window, event| {
-            // botao vermelho / Alt+F4: esconde em vez de fechar (volta pela bandeja)
+            // botao vermelho / Alt+F4: esconde (volta pela bandeja) ou sai do app,
+            // conforme a configuracao "Ao fechar"
             if let WindowEvent::CloseRequested { api, .. } = event
                 && window.label() == MAIN
             {
                 api.prevent_close();
-                let _ = window.app_handle().save_window_state(window_state_flags());
-                let _ = window.hide();
+                let app = window.app_handle();
+                if app.state::<CloseToTray>().0.load(Ordering::Relaxed) {
+                    let _ = app.save_window_state(window_state_flags());
+                    let _ = window.hide();
+                } else {
+                    quit(app);
+                }
             }
         })
-        .invoke_handler(tauri::generate_handler![load_board, save_board])
+        .invoke_handler(tauri::generate_handler![load_board, save_board, set_close_to_tray])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

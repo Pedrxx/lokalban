@@ -106,6 +106,7 @@ src-tauri/               Backend (Rust + Tauri 2)
 - **Botão amarelo recolhe em vez de minimizar**: sem ícone na barra de tarefas, uma janela
   minimizada não teria como voltar.
 - **Botão vermelho esconde**: o app segue vivo na bandeja, como no macOS. "Sair" fica no menu do ícone.
+  Em Configurações → "Ao fechar" dá para trocar por sair do app (vale também para o `Alt+F4`).
 - **Dados em JSON legível**: fácil de fazer backup, versionar ou sincronizar por conta própria.
 
 Discorda de alguma? Ótimo — abra uma [Discussion](https://github.com/Pedrxx/lokalban/discussions).

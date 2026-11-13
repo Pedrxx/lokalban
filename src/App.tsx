@@ -25,8 +25,8 @@ const activeButton = "bg-black/[0.08] text-black/80 dark:bg-white/[0.12] dark:te
 
 export default function App() {
   const board = useBoard();
-  const { theme, scale, pinnedOnTop } = board.settings;
-  const win = useWindowControls({ scale, pinnedOnTop, onPinnedChange: board.setPinnedOnTop });
+  const { theme, scale, pinnedOnTop, closeToTray } = board.settings;
+  const win = useWindowControls({ scale, pinnedOnTop, closeToTray, onPinnedChange: board.setPinnedOnTop });
   useTheme(theme, board.ready);
 
   // escala do board.json (antes de ler, vale a copia aplicada no main.tsx)
@@ -93,6 +93,7 @@ export default function App() {
         focused={win.focused}
         collapsed={win.collapsed}
         maximized={win.maximized}
+        closeToTray={closeToTray}
         onClose={win.close}
         onCollapse={win.toggleCollapse}
         onToggleMaximize={win.toggleMaximize}
@@ -213,6 +214,8 @@ export default function App() {
         onThemeChange={board.setTheme}
         scale={scale}
         onScaleChange={board.setScale}
+        closeToTray={closeToTray}
+        onCloseToTrayChange={board.setCloseToTray}
       />
 
       <ColumnSettings

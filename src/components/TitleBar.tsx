@@ -8,6 +8,7 @@ type Props = {
   focused: boolean;
   collapsed: boolean;
   maximized: boolean;
+  closeToTray: boolean;
   onClose: () => void;
   onCollapse: () => void;
   onToggleMaximize: () => void;
@@ -25,6 +26,7 @@ export function TitleBar({
   focused,
   collapsed,
   maximized,
+  closeToTray,
   onClose,
   onCollapse,
   onToggleMaximize,
@@ -40,6 +42,7 @@ export function TitleBar({
         focused={focused}
         collapsed={collapsed}
         maximized={maximized}
+        closeToTray={closeToTray}
         onClose={onClose}
         onCollapse={onCollapse}
         onToggleMaximize={onToggleMaximize}

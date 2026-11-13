@@ -5,6 +5,8 @@ type Props = {
   focused: boolean;
   collapsed: boolean;
   maximized: boolean;
+  /** o vermelho esconde na bandeja (true) ou sai do app (false) */
+  closeToTray: boolean;
   onClose: () => void;
   onCollapse: () => void;
   onToggleMaximize: () => void;
@@ -15,11 +17,19 @@ type Props = {
  *  - janela sem foco => bolinhas cinza
  *  - passar o mouse no grupo => cores + simbolos aparecem
  */
-export function TrafficLights({ focused, collapsed, maximized, onClose, onCollapse, onToggleMaximize }: Props) {
+export function TrafficLights({
+  focused,
+  collapsed,
+  maximized,
+  closeToTray,
+  onClose,
+  onCollapse,
+  onToggleMaximize,
+}: Props) {
   return (
     <div className="group relative z-10 flex items-center gap-2">
       <Light
-        label="Esconder (volta pelo ícone perto do relógio)"
+        label={closeToTray ? "Esconder (volta pelo ícone perto do relógio)" : "Sair do LokalBan"}
         focused={focused}
         on="bg-[#ff5f57]"
         hover="group-hover:bg-[#ff5f57]"

@@ -9,6 +9,13 @@ const THEME_OPTIONS: { value: ThemePref; label: string }[] = [
   { value: "dark", label: "Escuro" },
 ];
 
+type CloseAction = "tray" | "quit";
+
+const CLOSE_OPTIONS: { value: CloseAction; label: string }[] = [
+  { value: "tray", label: "Ir para a bandeja" },
+  { value: "quit", label: "Sair do app" },
+];
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -16,12 +23,23 @@ type Props = {
   onThemeChange: (theme: ThemePref) => void;
   scale: Scale;
   onScaleChange: (scale: Scale) => void;
+  closeToTray: boolean;
+  onCloseToTrayChange: (closeToTray: boolean) => void;
 };
 
 const percent = (scale: Scale) => `${Math.round(scale * 100)}%`;
 
 /** Popover da engrenagem: preferencias do app */
-export function SettingsPopover({ open, onClose, theme, onThemeChange, scale, onScaleChange }: Props) {
+export function SettingsPopover({
+  open,
+  onClose,
+  theme,
+  onThemeChange,
+  scale,
+  onScaleChange,
+  closeToTray,
+  onCloseToTrayChange,
+}: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -54,36 +72,7 @@ export function SettingsPopover({ open, onClose, theme, onThemeChange, scale, on
           <span id="settings-theme" className="text-[13px] text-black/75 dark:text-white/80">
             Aparência
           </span>
-
-          {/* controle segmentado no estilo macOS */}
-          <div
-            role="radiogroup"
-            aria-labelledby="settings-theme"
-            className="flex rounded-lg bg-black/[0.06] p-0.5 dark:bg-white/[0.08]"
-          >
-            {THEME_OPTIONS.map((opt) => {
-              const selected = opt.value === theme;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => onThemeChange(opt.value)}
-                  className={cn(
-                    "rounded-md px-2.5 py-1 text-[12px] font-medium",
-                    "transition-[background-color,color,box-shadow] duration-150 ease-mac",
-                    "focus-visible:outline-2 focus-visible:outline-sky-500",
-                    selected
-                      ? "bg-white text-black/85 shadow-[0_1px_2px_rgb(0_0_0/0.15)] dark:bg-white/20 dark:text-white"
-                      : "text-black/55 hover:text-black/80 dark:text-white/60 dark:hover:text-white/85",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+          <Segmented labelledBy="settings-theme" options={THEME_OPTIONS} value={theme} onChange={onThemeChange} />
         </div>
 
         <div className="flex items-start justify-between gap-3 px-1 pt-2 pb-1">
@@ -130,7 +119,64 @@ export function SettingsPopover({ open, onClose, theme, onThemeChange, scale, on
             </div>
           </div>
         </div>
+
+        {/* botao vermelho e Alt+F4 */}
+        <div className="flex items-center justify-between gap-3 px-1 pt-2 pb-1">
+          <span id="settings-close" className="text-[13px] text-black/75 dark:text-white/80">
+            Ao fechar
+          </span>
+          <Segmented
+            labelledBy="settings-close"
+            options={CLOSE_OPTIONS}
+            value={closeToTray ? "tray" : "quit"}
+            onChange={(v) => onCloseToTrayChange(v === "tray")}
+          />
+        </div>
       </div>
     </>
+  );
+}
+
+/** Controle segmentado no estilo macOS */
+function Segmented<T extends string>({
+  labelledBy,
+  options,
+  value,
+  onChange,
+}: {
+  labelledBy: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={labelledBy}
+      className="flex rounded-lg bg-black/[0.06] p-0.5 dark:bg-white/[0.08]"
+    >
+      {options.map((opt) => {
+        const selected = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-[12px] font-medium whitespace-nowrap",
+              "transition-[background-color,color,box-shadow] duration-150 ease-mac",
+              "focus-visible:outline-2 focus-visible:outline-sky-500",
+              selected
+                ? "bg-white text-black/85 shadow-[0_1px_2px_rgb(0_0_0/0.15)] dark:bg-white/20 dark:text-white"
+                : "text-black/55 hover:text-black/80 dark:text-white/60 dark:hover:text-white/85",
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

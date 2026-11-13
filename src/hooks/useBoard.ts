@@ -41,6 +41,7 @@ function parseSettings(raw: unknown): Settings {
     theme: isThemePref(s.theme) ? s.theme : DEFAULT_SETTINGS.theme,
     scale: isScale(s.scale) ? s.scale : DEFAULT_SETTINGS.scale,
     pinnedOnTop: typeof s.pinnedOnTop === "boolean" ? s.pinnedOnTop : DEFAULT_SETTINGS.pinnedOnTop,
+    closeToTray: typeof s.closeToTray === "boolean" ? s.closeToTray : DEFAULT_SETTINGS.closeToTray,
   };
 }
 
@@ -408,6 +409,10 @@ export function useBoard() {
     setState((s) => ({ ...s, settings: { ...s.settings, pinnedOnTop } }));
   }, []);
 
+  const setCloseToTray = useCallback((closeToTray: boolean) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, closeToTray } }));
+  }, []);
+
   // ---------------------------------------------------------------- dias
 
   /** Tarefas do dia exibido, por coluna */
@@ -450,6 +455,7 @@ export function useBoard() {
     setTheme,
     setScale,
     setPinnedOnTop,
+    setCloseToTray,
     columns: dayColumns,
     lockedColumns,
     tasks: dayTasks,

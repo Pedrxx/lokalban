@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 
@@ -13,6 +13,7 @@ const inTauri = isTauri();
  * Controles da janela-widget:
  *  - vermelho: esconde a janela (o Rust intercepta o fechamento; volta pela
  *              bandeja e "Sair" fica no menu do icone perto do relogio)
+ *              ou sai do app, conforme a configuracao "Ao fechar"
  *  - amarelo:  recolhe a janela ate a barra de titulo (minimizar nao serve:
  *              sem icone na barra de tarefas nao haveria como restaurar)
  *  - verde:    maximiza e volta ao tamanho solto, como no macOS
@@ -22,11 +23,14 @@ const inTauri = isTauri();
 export function useWindowControls({
   scale = 1,
   pinnedOnTop = false,
+  closeToTray = true,
   onPinnedChange,
 }: {
   scale?: number;
   /** acima das janelas (salvo nas configuracoes) */
   pinnedOnTop?: boolean;
+  /** vermelho / Alt+F4 esconde na bandeja (true) ou sai do app (false) */
+  closeToTray?: boolean;
   onPinnedChange: (pinned: boolean) => void;
 }) {
   const [focused, setFocused] = useState(true);
@@ -46,6 +50,14 @@ export function useWindowControls({
       : win.setAlwaysOnTop(false).then(() => win.setAlwaysOnBottom(true));
     apply.catch((err) => console.error("Falha ao alterar a camada da janela:", err));
   }, [pinnedOnTop]);
+
+  // quem decide o fechamento e o Rust (assim o Alt+F4 tambem segue a opcao)
+  useEffect(() => {
+    if (!inTauri) return;
+    invoke("set_close_to_tray", { enabled: closeToTray }).catch((err) =>
+      console.error("Falha ao configurar o fechamento:", err),
+    );
+  }, [closeToTray]);
 
   // trocar a escala com a janela recolhida ajusta a altura dela
   useEffect(() => {

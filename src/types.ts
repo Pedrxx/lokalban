@@ -64,9 +64,17 @@ export type Settings = {
   scale: Scale;
   /** janela fixada acima das outras (o padrao e ficar atras, como widget) */
   pinnedOnTop: boolean;
+  /** botao vermelho / Alt+F4: true esconde na bandeja, false sai do app */
+  closeToTray: boolean;
 };
 
-export const DEFAULT_SETTINGS: Settings = { pendingToToday: true, theme: "auto", scale: 1, pinnedOnTop: false };
+export const DEFAULT_SETTINGS: Settings = {
+  pendingToToday: true,
+  theme: "auto",
+  scale: 1,
+  pinnedOnTop: false,
+  closeToTray: true,
+};
 
 export type BoardState = {
   columns: ColumnDef[];
